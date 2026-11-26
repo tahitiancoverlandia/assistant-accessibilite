@@ -431,7 +431,7 @@ function captionChecks(cap){
   out.clickHere=/\b(clique[zr]?|click)\s+(ici|here)\b|\ben cliquant ici\b/i.test(cap);
   out.urls=cap.match(/\bhttps?:\/\/\S+|\bwww\.\S+/gi)||[];
   out.linkBio=/lien en bio|lien dans la bio/i.test(cap);
-  out.jr=/risque|modération|moderation|jeu responsable|interdit aux mineurs|\-\s?18|18 ans/i.test(cap);
+  out.jr=/risque|modération|moderation|jeu responsable|interdit aux mineurs|\-\s?18|18 ans|dangereux|addiction|dépendance|dependance|endettement|joueurs.?info/i.test(cap);
   return out;
 }
 function altChecks(alt){
@@ -465,8 +465,10 @@ function evaluate(){
   if(!cap.trim()) set("1.3","fix","La légende est vide : gain, dates, conditions et mention jeu responsable doivent y être écrits en clair.");
   else {
     const miss=(ai?.infos_absentes_legende||[]).map(String).filter(Boolean);
-    const issues=[]; if(miss.length) issues.push((state.aiSource==="ocr"?"Infos lues sur le visuel mais absentes de la légende : ":"Infos du visuel absentes de la légende : ")+miss.join(" · ")); if(!cc.jr) issues.push("Pas de mention jeu responsable dans la légende (ex. « Jouer comporte des risques »).");
+    const ocr=state.aiSource==="ocr";
+    const issues=[]; if(miss.length && !ocr) issues.push("Infos du visuel absentes de la légende : "+miss.join(" · ")); if(!cc.jr) issues.push("Pas de mention jeu responsable dans la légende (ex. « Jouer comporte des risques »).");
     if(issues.length) set("1.3","fix",issues.join("\n"));
+    else if(ocr && miss.length) set("1.3","check",`La lecture automatique a vu sur le visuel : ${miss.join(" · ")}. Vérifie que ces montants et dates sont bien dans la légende (la lecture peut se tromper sur les chiffres stylisés).`);
     else if(!ai && n) set("1.3","check","Mention jeu responsable présente. Vérifie que les chiffres et dates du visuel sont aussi dans la légende.");
     else set("1.3","ok","Les infos clés du visuel et la mention jeu responsable sont dans la légende.");
   }
@@ -493,8 +495,10 @@ function evaluate(){
   // 1.7
   if(!n) set("1.7","na","Ajoute une création.");
   else if(els && els.length){
-    const small=els.filter(e=>e.m && (e.type==="mention_legale"||e.type==="autre") && e.m.hPx<30);
-    if(small.length) set("1.7","fix",small.map(e=>`« ${e.texte} » : environ ${Math.round(e.m.hPx)} px de taille de police estimée pour 1080 px de large (viser 30 px ou plus)`).join("\n"));
+    const small=els.filter(e=>e.m && (e.type==="mention_legale"||e.type==="autre") && e.m.hPx<26);
+    const near=els.filter(e=>e.m && (e.type==="mention_legale"||e.type==="autre") && e.m.hPx>=26 && e.m.hPx<30);
+    if(!small.length && near.length) set("1.7","check",near.map(e=>`« ${e.texte} » : environ ${Math.round(e.m.hPx)} px, juste sous les 30 px conseillés. Vérifie sur un téléphone que ça se lit bien.`).join("\n"));
+    else if(small.length) set("1.7","fix",small.map(e=>`« ${e.texte} » : environ ${Math.round(e.m.hPx)} px de taille de police estimée pour 1080 px de large (viser 30 px ou plus)`).join("\n"));
     else set("1.7","ok","Tous les textes mesurés font au moins 30 px (taille de police estimée, pour 1080 px de large).");
   } else set("1.7","check","À l'œil : les mentions doivent faire environ 30 px minimum sur un visuel de 1080 px de large.");
   // 2.x
@@ -724,7 +728,7 @@ const MONTHS="janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|se
 const digits=(s)=>s.replace(/[^\d]/g,"");
 function keyInfos(text){
   const out=new Set();
-  const amt=/\d{1,3}(?:[ .  ]\d{3})+(?:,\d+)?\s?(?:F|XPF|€)?|\d+(?:,\d+)?\s?(?:mds?|milliards?|millions?|M)\b|\d{2,}\s?(?:F|XPF|€)\b/gi;
+  const amt=/\d{1,3}(?:[ .  ]\d{3})+(?:,\d+)?\s?(?:F\b|XPF\b|€)|\d+(?:,\d+)?\s?(?:mds?|milliards?|millions?)\b|\d{2,}\s?(?:F\b|XPF\b|€)/gi;
   const dat=new RegExp(`\\d{1,2}(?:er)?\\s(?:au\\s\\d{1,2}\\s)?(?:${MONTHS})(?:\\s\\d{4})?`,"gi");
   for(const re of [amt,dat]) for(const m of text.match(re)||[]) out.add(m.trim());
   return [...out];
