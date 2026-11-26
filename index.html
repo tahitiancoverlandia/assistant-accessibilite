@@ -123,6 +123,24 @@ h2{font-family:var(--f-head);font-size:19px;letter-spacing:-.01em;margin:0 0 4px
 .toast svg{width:18px;height:18px;flex:none}
 @media (max-width:940px){.toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){.scan .sweep{animation:none;display:none}.spin,.busy li.act .st{animation:none}.doneov,.doneov .badge,.bx,.finished{animation:none}.doneov .ck svg{stroke-dashoffset:0;animation:none}}
+.capwrap{position:relative}
+.capwrap .capscan{position:absolute;inset:0;border-radius:10px;display:none;align-items:center;justify-content:center;gap:10px;font-weight:600;font-size:13.5px;color:var(--accent);background:linear-gradient(100deg,color-mix(in srgb,var(--surface) 70%,transparent) 30%,color-mix(in srgb,var(--accent-soft) 90%,transparent) 50%,color-mix(in srgb,var(--surface) 70%,transparent) 70%);background-size:250% 100%;animation:shimmer 1.4s linear infinite;backdrop-filter:blur(1px)}
+.capwrap.working .capscan{display:flex}
+.capwrap .capscan .spin{border-color:var(--line);border-top-color:var(--accent)}
+@keyframes shimmer{from{background-position:120% 0}to{background-position:-120% 0}}
+.fixrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.btn.magic{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--accent),#7A4BD6);color:#fff}
+.btn.magic svg{width:16px;height:16px}
+.fixhint{font-size:12.5px;color:var(--faint)}
+.capdone{margin-top:10px;border:1px solid color-mix(in srgb,var(--ok) 35%,transparent);background:var(--ok-soft);border-radius:12px;padding:10px 12px;font-size:13.5px;animation:pop .35s ease}
+.capdone .h{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;color:var(--ok)}
+.capdone .h span{display:flex;align-items:center;gap:8px}
+.capdone .h svg{width:16px;height:16px}
+.capdone ul{margin:6px 0 0;padding-left:18px;color:var(--ink)}
+.capdone li{margin:2px 0}
+.capdone.err{border-color:color-mix(in srgb,var(--fix) 35%,transparent);background:var(--fix-soft)}
+.capdone.err .h{color:var(--fix)}
+@media (prefers-reduced-motion:reduce){.capwrap .capscan{animation:none}}
 .mbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:none;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(16,24,40,.08)}
 .mbar button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;background:none;color:var(--ink);font-weight:600;font-size:14.5px;cursor:pointer;padding:4px 0}
 .mbar .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
@@ -316,7 +334,9 @@ details.tool[open]>summary .opt:last-child{display:none}
         <div style="min-width:0">
           <h3><label for="caption">Colle ta légende</label><span class="now">À faire</span></h3>
           <p class="hint">Le texte exact que tu vas publier sous le visuel, avec les hashtags.</p>
-          <textarea id="caption" rows="5" placeholder="Ex. Jackpot de 2,8 milliards de francs ce samedi. Jouer comporte des risques."></textarea>
+          <div class="capwrap" id="capwrap"><textarea id="caption" rows="5" placeholder="Ex. Jackpot de 2,8 milliards de francs ce samedi. Jouer comporte des risques."></textarea><div class="capscan" aria-hidden="true"><span class="spin"></span><span id="capscan-t">Correction en cours…</span></div></div>
+          <div class="fixrow" id="fixcap-row"><button class="btn magic small" id="btn-fixcap" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg><span id="fixcap-l">Corriger la légende</span></button><span class="fixhint" id="fixcap-hint">Réécrit la légende selon les règles de la fiche, en un clic.</span></div>
+          <div class="capdone" id="capdone" hidden></div>
           <div class="igprev" id="igprev" hidden><div class="lab"><span id="igprev-l">Ce qu'on voit sur Instagram avant « plus »</span><span id="igprev-n"></span></div><div class="txt" id="igprev-t"></div></div>
         </div>
       </div>
@@ -751,6 +771,7 @@ function updBusy(){
   const sc=$("#scan"); if(sc){ sc.classList.toggle("indet",indet||b.pct==null); $("#scan-txt").textContent = lab+(b.pct!=null&&!indet&&b.step===0?` · ${Math.round(b.pct*100)} %`:"…"); $("#scan-bar").style.width=Math.round((b.step+(b.pct||0))/steps.length*100)+"%"; }
   const card=$("#busy-card"); if(card){ card.querySelectorAll("li").forEach((li,i)=>{ li.className=i<b.step?"done":i===b.step?"act":""; const pc=li.querySelector(".pc"); if(pc) pc.textContent = i===b.step&&b.pct!=null&&!indet&&b.step===0 ? Math.round(b.pct*100)+" %" : ""; }); }
 }
+function toast(msg){ const t=$("#toast"); t.replaceChildren(svg(CK),document.createTextNode(msg)); t.classList.add("show"); clearTimeout(window.__toastT); window.__toastT=setTimeout(()=>t.classList.remove("show"),4200); }
 function busyStart(kind){ state.busy={kind,step:0,pct:0}; state.finished=null; showScan(); render(); }
 function busyStep(i){ if(!state.busy) return; state.busy.step=i; state.busy.pct=null; updBusy(); }
 function busyProgress(p,label){ if(!state.busy) return; state.busy.pct=p; updBusy(); }
@@ -759,7 +780,7 @@ function busyEnd(msg){
   if(msg){
     state.finished=msg;
     const w=$("#pvwrap"); if(w){ const o=el("div","doneov"); o.setAttribute("aria-hidden","true"); const bd=el("div","badge"); const ck=el("div","ck"); ck.append(svg(CK)); bd.append(ck,el("span",null,"Analyse terminée")); o.append(bd); w.append(o); setTimeout(()=>o.remove(),2900); }
-    const t=$("#toast"); t.replaceChildren(svg(CK),document.createTextNode(msg)); t.classList.add("show"); clearTimeout(window.__toastT); window.__toastT=setTimeout(()=>t.classList.remove("show"),4200);
+    toast(msg);
   }
   render();
 }
@@ -801,7 +822,8 @@ function render(){
     const h=el("div","grp-h fix"); h.append(el("span","c",String(fix.length)),document.createTextNode("À corriger")); body.append(h);
     for(const id of fix){ const r=R[id]; const it=el("div","item fix"); it.append(title(id)); if(r.d) it.append(el("div","why",r.d));
       const how=el("div","how"); how.append(el("b",null,"Comment corriger : "),document.createTextNode(INFO[id].how)); it.append(how);
-      const g=GO[id]; if(g && !(g==="pick"&&state.kind!=="image")){ const gb=el("button","btn primary small go",GO_LABEL[g]+" →"); gb.type="button"; gb.onclick=()=>goTo(g); it.append(gb); }
+      const g=GO[id]; if(g && !(g==="pick"&&state.kind!=="image")){ const gb=el("button","btn primary small go",GO_LABEL[g]+" →"); gb.type="button"; gb.onclick=()=>goTo(g); it.append(gb);
+        if(g==="cap" && !$("#fixcap-row").hidden && state.caption.trim()){ const mb=el("button","btn magic small go","Corriger avec "+LLM_NAME); mb.type="button"; mb.style.marginLeft="6px"; mb.onclick=()=>{ goTo("cap"); setTimeout(()=>$("#btn-fixcap").click(),400); }; it.append(mb); } }
       for(const sg of (r.sug||[])){ const box=el("div","sug"); box.append(el("b",null,sg.label+" : "),document.createTextNode(sg.text)); const b=el("button","btn primary small","Utiliser"); b.type="button";
         b.onclick=()=>{ state.alts[sg.target]=sg.text; const ta=document.getElementById("alt-"+sg.target); if(ta) ta.value=sg.text; render(); }; box.append(b); it.append(box); }
       body.append(it); }
@@ -883,6 +905,54 @@ async function copyText(t,okMsg){ try{ await navigator.clipboard.writeText(t); s
 $("#btn-copycap").onclick=()=>copyText(state.caption,"Légende copiée : colle-la dans Instagram ou Facebook.");
 $("#btn-copyalt").onclick=()=>copyText(state.alts.filter(a=>a&&a.trim()).map((a,i,arr)=>arr.length>1?`Image ${i+1} : ${a.trim()}`:a.trim()).join("\n"),"Description copiée : colle-la dans « Écrire un texte alternatif ».");
 $("#bx-chk").onchange=renderBoxes;
+/* ---------- corriger la légende en un clic ---------- */
+let capCtl=null, capPrev=null;
+function capPrompt(){
+  const ig=state.platform==="instagram"; const infos=(state.ai?.infos_cles||[]).filter(Boolean);
+  return `Tu corriges la légende d'une publication ${ig?"Instagram":"Facebook"} de jeux d'argent pour qu'elle respecte ces règles d'accessibilité :
+1. L'information principale (gain, montant, date) dans la première phrase, courte.${ig?" Instagram coupe la légende vers 125 caractères : la première ligne doit tenir dedans.":""}
+2. Texte structuré : paragraphes courts séparés par une ligne vide, listes avec des tirets « - » (pas d'emojis en début de ligne), aucune police « fantaisie » (lettres Unicode spéciales grasses ou italiques), pas de majuscules sur des phrases entières.
+3. Hashtags en fin de légende, avec une majuscule à chaque mot (#PlaisirDOffrir).
+4. Au maximum 3 emojis, jamais le même deux fois, jamais à la place d'un mot.
+5. Liens explicites : jamais « cliquez ici ».${ig?" Sur Instagram, un lien n'est pas cliquable : renvoie au « lien en bio ».":""}
+6. Une mention de prévention doit être présente. Si la légende en a déjà une, garde-la telle quelle. Sinon, ajoute à la fin : « Les jeux d'argent et de hasard peuvent être dangereux : pertes d'argent, conflits familiaux, addiction… Retrouvez nos conseils sur joueurs-info-service.fr »
+${infos.length?`7. Ces informations sont écrites sur le visuel ; si elles manquent dans la légende, ajoute-les : ${infos.join(" · ")}.
+`:""}Ne change pas le sens, n'invente aucune information (gain, date, lieu, condition), garde le même ton et le même tutoiement ou vouvoiement, en français.
+
+Légende actuelle, entre les balises :
+<legende>
+${state.caption.slice(0,4000)}
+</legende>
+
+Réponds uniquement avec un objet JSON : {"legende": "la légende corrigée, avec de vrais retours à la ligne", "changements": ["ce que tu as changé, en quelques mots, une entrée par changement"]}`;
+}
+function capMsg(kind,title,items,undo){
+  const box=$("#capdone"); box.hidden=false; box.className="capdone"+(kind==="err"?" err":""); box.replaceChildren();
+  const h=el("div","h"); const sp=el("span"); sp.append(svg(kind==="err"?P_X:CK),document.createTextNode(title)); h.append(sp);
+  if(undo){ const u=el("button","linkbtn","Annuler"); u.type="button"; u.onclick=undo; h.append(u); }
+  box.append(h); if(items&&items.length){ const ul=document.createElement("ul"); items.slice(0,8).forEach(t=>ul.append(el("li",null,String(t)))); box.append(ul); }
+}
+$("#btn-fixcap").onclick=async()=>{
+  if(!state.caption.trim()){ capMsg("err","Colle d'abord ta légende dans le champ."); $("#caption").focus(); return; }
+  if(capCtl){ capCtl.abort(); return; }
+  capCtl=new AbortController(); const btn=$("#btn-fixcap"); $("#fixcap-l").textContent="Arrêter"; $("#capwrap").classList.add("working"); $("#caption").setAttribute("aria-busy","true"); $("#capdone").hidden=true;
+  try{
+    const j=await llmJson(capPrompt(),capCtl.signal);
+    const txt=String(j?.legende||"").trim(); if(!txt) throw {code:"invalid_json"};
+    capPrev=state.caption; state.caption=txt; $("#caption").value=txt; render();
+    const ch=Array.isArray(j.changements)?j.changements.map(String).filter(Boolean):[];
+    capMsg("ok", ch.length?`Légende corrigée par ${LLM_NAME} : ${ch.length} changement${ch.length>1?"s":""}`:`Légende vérifiée par ${LLM_NAME} : rien à changer`, ch,
+      ()=>{ if(capPrev!=null){ state.caption=capPrev; $("#caption").value=capPrev; capPrev=null; render(); capMsg("ok","Ta légende d'origine est remise."); } });
+    toast(`Légende corrigée par ${LLM_NAME}.`);
+  }catch(e){
+    const c=e?.code||e?.name;
+    if(c==="cancelled"||c==="AbortError") capMsg("err","Correction arrêtée.");
+    else if(c==="nokey"){ capMsg("err","Pour corriger avec l'IA, colle d'abord ta clé dans « Analyse complète par une IA » (Gemini est gratuit)."); const x=$("#ext-box"); if(x){ x.open=true; x.scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>$("#ai-key")?.focus(),400); } }
+    else if(c==="not_granted") capMsg("err","Tu n'as pas autorisé Claude pour cette page.");
+    else if(c==="rate_limited") capMsg("err","Trop de demandes pour le moment : réessaie dans quelques minutes.");
+    else capMsg("err","La correction a échoué : réessaie.");
+  }finally{ capCtl=null; $("#capwrap").classList.remove("working"); $("#caption").removeAttribute("aria-busy"); $("#fixcap-l").textContent="Corriger avec "+LLM_NAME; }
+};
 $("#btn-nosrt").onclick=()=>{ state.noSrt=true; render(); };
 $("#mbar-btn").onclick=()=>$("#h-res").scrollIntoView({behavior:"smooth",block:"start"});
 document.querySelectorAll('input[name=pf]').forEach(r=>r.addEventListener("change",()=>render()));
@@ -1053,11 +1123,19 @@ $("#ai-run").onclick=async()=>{
 };
 $("#ai-stop").onclick=()=>extCtl?.abort();
 
+const LLM_NAME="l'IA";
+async function llmJson(prompt,signal){
+  const prov=$("#ai-prov").value, key=$("#ai-key").value.trim(), model=$("#ai-model").value.trim()||PROV[prov].model;
+  if(!key) throw {code:"nokey"};
+  const t=await callProvider(prov,key,model,prompt,[],signal); const j=parseJson(t); if(!j) throw {code:"invalid_json"}; return j;
+}
+
 window.__afterLoad=runOcr; window.__onReset=()=>{ ocrRun++; const o=document.getElementById('ocr-box'); if(o) o.hidden=true; };
 
 $("#btn-dl").hidden=false;
 $("#btn-dl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([reportText()],{type:"text/plain;charset=utf-8"})); a.download="controle-accessibilite-"+new Date().toISOString().slice(0,10)+".txt"; document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); };
 
+$("#fixcap-l").textContent="Corriger avec "+LLM_NAME;
 renderMedia(); renderPick(); render();
 if(location.hash==="#exemple") loadExample();
 
