@@ -76,6 +76,53 @@ h2{font-family:var(--f-head);font-size:19px;letter-spacing:-.01em;margin:0 0 4px
 .go{margin-top:10px}
 .flash-target{animation:flashT 1.4s ease}
 @keyframes flashT{0%,100%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 0 4px var(--sun)}}
+.pvwrap{position:relative;display:inline-block;max-width:100%;line-height:0}
+.scan{position:absolute;inset:0;overflow:hidden;background:rgba(11,15,23,.28);line-height:1.4}
+.scan .sweep{position:absolute;left:0;right:0;height:26%;top:-26%;background:linear-gradient(to bottom,transparent,rgba(255,196,0,.0) 10%,rgba(255,196,0,.55) 50%,rgba(255,196,0,0) 90%,transparent);border-bottom:2px solid rgba(255,196,0,.95);animation:sweep 1.7s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes sweep{from{top:-26%}to{top:100%}}
+.scan .pill{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;min-width:min(240px,86%);background:rgba(15,23,40,.86);color:#fff;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.scan .row{display:flex;align-items:center;gap:8px}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);border-top-color:#FFC400;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scan .pbar{display:block;height:4px;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden}
+.scan .pbar i{display:block;height:100%;width:0;background:#FFC400;border-radius:99px;transition:width .25s}
+.scan.indet .pbar i{width:35%!important;animation:indet 1.2s ease-in-out infinite}
+@keyframes indet{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
+.doneov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,122,75,.22);line-height:1.3;animation:doneFade 2.8s ease forwards;pointer-events:none}
+.doneov .badge{display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,255,255,.96);color:#0A7A4B;border-radius:16px;padding:16px 22px;font-weight:700;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+.doneov .ck{width:46px;height:46px;border-radius:50%;background:#0A7A4B;color:#fff;display:grid;place-items:center}
+.doneov .ck svg{width:26px;height:26px;stroke-dasharray:30;stroke-dashoffset:30;animation:draw .5s .2s ease forwards}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes doneFade{0%,70%{opacity:1}100%{opacity:0}}
+.boxes{position:absolute;inset:0;pointer-events:none}
+.bx{position:absolute;border:2px solid #0A7A4B;border-radius:4px;background:rgba(10,122,75,.10);animation:bxIn .4s ease both}
+.bx.bad{border-color:#E5484D;background:rgba(229,72,77,.14)}
+@keyframes bxIn{from{opacity:0;transform:scale(1.15)}to{opacity:1;transform:scale(1)}}
+.boxtog{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--muted);cursor:pointer}
+.boxtog input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.boxtog .lg{display:inline-flex;align-items:center;gap:4px}
+.boxtog .lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.busy{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;background:var(--surface)}
+.busy strong{display:flex;align-items:center;gap:10px;font-family:var(--f-head);font-size:16px}
+.busy .spin{border-color:var(--line);border-top-color:var(--accent);width:18px;height:18px}
+.busy ol{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.busy li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--faint)}
+.busy li .st{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.busy li.act{color:var(--ink);font-weight:600}
+.busy li.act .st{border-color:var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+.busy li.done{color:var(--muted)}
+.busy li.done .st{background:var(--ok);border-color:var(--ok);color:#fff}
+.busy li.done .st svg{width:12px;height:12px}
+.busy li .pc{margin-left:auto;font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+.dim{opacity:.45;pointer-events:none;transition:opacity .2s}
+.finished{display:flex;align-items:center;gap:10px;background:var(--ok-soft);color:var(--ok);border-radius:12px;padding:10px 14px;font-weight:600;font-size:14px;margin-bottom:10px;animation:pop .4s ease}
+.finished svg{width:18px;height:18px;flex:none}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);z-index:9;display:flex;align-items:center;gap:10px;background:#0A7A4B;color:#fff;border-radius:12px;padding:12px 18px;font-weight:600;font-size:14.5px;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:18px;height:18px;flex:none}
+@media (max-width:940px){.toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
+@media (prefers-reduced-motion:reduce){.scan .sweep{animation:none;display:none}.spin,.busy li.act .st{animation:none}.doneov,.doneov .badge,.bx,.finished{animation:none}.doneov .ck svg{stroke-dashoffset:0;animation:none}}
 .mbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:none;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(16,24,40,.08)}
 .mbar button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;background:none;color:var(--ink);font-weight:600;font-size:14.5px;cursor:pointer;padding:4px 0}
 .mbar .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
@@ -234,6 +281,7 @@ details.tool[open]>summary .opt:last-child{display:none}
           <div id="media" hidden>
             <div class="preview" id="preview"></div>
             <div class="strip" id="strip"></div>
+            <label class="boxtog" id="bx-tog" hidden><input type="checkbox" id="bx-chk" checked> Montrer les textes repérés <span class="lg"><i style="background:#0A7A4B"></i>lisible</span> <span class="lg"><i style="background:#E5484D"></i>trop peu contrasté</span></label>
             <div class="mediabar"><span id="meta"></span><button class="btn ghost small" id="btn-change" type="button">Changer de fichier</button></div>
             <div class="note" id="ex-note" hidden><span>Exemple : un faux visuel avec des erreurs volontaires.</span><button class="linkbtn" type="button" id="btn-clear">Effacer l'exemple</button></div>
             <div class="tool" id="pip-box">
@@ -315,6 +363,7 @@ details.tool[open]>summary .opt:last-child{display:none}
     </section>
   </div>
 </main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="mbar" id="mbar"><button type="button" id="mbar-btn"><span><i class="dot" id="mbar-dot"></i><span id="mbar-txt"></span></span><span aria-hidden="true">Voir ↓</span></button></div>
 <script>
 (() => {
@@ -409,7 +458,7 @@ async function grabFrame(m,t,maxW=1280){
 
 /* ---------- flashs (WCAG 2.3.1, approximation par quarts d'écran) ---------- */
 async function analyseFlashes(m){
-  state.flashBusy=true; render();
+  state.flashBusy=true; busyStart("flash");
   const v=m.el, fps=20, maxT=Math.min(v.duration,90), n=Math.floor(maxT*fps);
   const c=document.createElement("canvas"); c.width=32; c.height=32; const g=c.getContext("2d",{willReadFrequently:true});
   const series=[[],[],[],[],[]]; // 4 quarts + plein écran
@@ -418,7 +467,7 @@ async function analyseFlashes(m){
     const q=[0,0,0,0]; let all=0;
     for(let y=0;y<32;y++) for(let x=0;x<32;x++){ const k=(y*32+x)*4; const L=lum([d[k],d[k+1],d[k+2]]); q[(y<16?0:2)+(x<16?0:1)]+=L; all+=L; }
     q.forEach((s,j)=>series[j].push(s/256)); series[4].push(all/1024);
-    if(i%20===0) setStatus(`Analyse des flashs : ${Math.round(i/n*100)} %`);
+    if(i%6===0) busyProgress(i/n);
   }
   let worst={count:0,t:0};
   for(const s of series){
@@ -430,7 +479,7 @@ async function analyseFlashes(m){
     for(let i=0;i<tr.length;i++){ let j=i; while(j<tr.length && tr[j]-tr[i]<1) j++; const fl=Math.floor((j-i)/2); if(fl>worst.count) worst={count:fl,t:tr[i]}; }
   }
   state.flash={max:worst.count,t:worst.t,analysed:maxT,partial:maxT<v.duration};
-  state.flashBusy=false; setStatus(""); render();
+  state.flashBusy=false; setStatus(""); busyEnd(worst.count>3?`Analyse terminée : jusqu'à ${worst.count} flashs par seconde repérés.`:"Analyse terminée : pas de clignotement trop rapide.");
 }
 
 /* ---------- SRT ---------- */
@@ -601,13 +650,16 @@ function renderMedia(){
   const pv=$("#preview"); pv.replaceChildren(); const strip=$("#strip"); strip.replaceChildren();
   if(has){
     const m=state.media[Math.min(state.sel,state.media.length-1)];
-    if(m.type==="image"){ m.canvas.setAttribute("role","img"); m.canvas.setAttribute("aria-label",state.media.length>1?`Aperçu de l'image ${state.sel+1}`:"Aperçu du visuel"); pv.append(m.canvas); }
-    else { m.el.controls=true; pv.append(m.el); }
+    const wrap=el("div","pvwrap"); wrap.id="pvwrap";
+    if(m.type==="image"){ m.canvas.setAttribute("role","img"); m.canvas.setAttribute("aria-label",state.media.length>1?`Aperçu de l'image ${state.sel+1}`:"Aperçu du visuel"); wrap.append(m.canvas); }
+    else { m.el.controls=true; wrap.append(m.el); }
+    const bl=el("div","boxes"); bl.id="boxes"; bl.setAttribute("aria-hidden","true"); wrap.append(bl);
+    pv.append(wrap); if(state.busy) showScan();
     if(state.media.length>1) state.media.forEach((mm,i)=>{
       const b=el("button"); b.type="button"; b.setAttribute("aria-label",`Voir l'image ${i+1}`); b.setAttribute("aria-current",String(i===state.sel));
       const c=document.createElement("canvas"); c.width=104; c.height=128; const g=c.getContext("2d"); const r=Math.max(104/mm.canvas.width,128/mm.canvas.height);
       g.drawImage(mm.canvas,(104-mm.canvas.width*r)/2,(128-mm.canvas.height*r)/2,mm.canvas.width*r,mm.canvas.height*r); b.append(c);
-      b.onclick=()=>{ state.sel=i; state.pickMode=0; renderMedia(); renderPick(); }; strip.append(b);
+      b.onclick=()=>{ state.sel=i; state.pickMode=0; renderMedia(); renderPick(); renderBoxes(); }; strip.append(b);
     });
     $("#meta").textContent = state.kind==="video" ? `Vidéo · ${m.w} × ${m.h} px · ${fr(m.dur)} s${Math.abs(m.w/m.h-9/16)<0.03?" · format Reel":""}` :
       (state.media.length>1?`Carrousel de ${state.media.length} images · `:"")+`${m.w} × ${m.h} px`;
@@ -680,6 +732,46 @@ function goTo(kind){
   if(t.focus) setTimeout(()=>t.focus({preventScroll:true}),350);
 }
 
+/* ---------- animation d'analyse ---------- */
+const BUSY_STEPS={ocr:["Lecture des textes du visuel","Mesure des contrastes et des tailles","Comparaison avec la légende"],
+  ia:["Préparation du visuel","Analyse par l'IA","Mesure des contrastes et des tailles"],
+  claude:["Préparation du visuel","Analyse par Claude","Mesure des contrastes et des tailles"],
+  flash:["Analyse des clignotements de la vidéo"]};
+state.busy=null; state.finished=null;
+const CK="M5 12.5l4.5 4.5L19 7.5";
+function showScan(){
+  const w=$("#pvwrap"); if(!w||!state.busy) return; let sc=$("#scan");
+  if(!sc){ sc=el("div","scan"); sc.id="scan"; sc.setAttribute("aria-hidden","true"); sc.append(el("div","sweep"));
+    const p=el("div","pill"); const r=el("div","row"); r.append(el("span","spin")); const t=el("span"); t.id="scan-txt"; r.append(t); const pb=el("span","pbar"); const i=document.createElement("i"); i.id="scan-bar"; pb.append(i); p.append(r,pb); sc.append(p); w.append(sc); }
+  updBusy();
+}
+function updBusy(){
+  const b=state.busy; if(!b) return; const steps=BUSY_STEPS[b.kind]; const lab=steps[b.step]||steps[0];
+  const indet = b.kind==="ia"||b.kind==="claude" ? b.step===1 : false;
+  const sc=$("#scan"); if(sc){ sc.classList.toggle("indet",indet||b.pct==null); $("#scan-txt").textContent = lab+(b.pct!=null&&!indet&&b.step===0?` · ${Math.round(b.pct*100)} %`:"…"); $("#scan-bar").style.width=Math.round((b.step+(b.pct||0))/steps.length*100)+"%"; }
+  const card=$("#busy-card"); if(card){ card.querySelectorAll("li").forEach((li,i)=>{ li.className=i<b.step?"done":i===b.step?"act":""; const pc=li.querySelector(".pc"); if(pc) pc.textContent = i===b.step&&b.pct!=null&&!indet&&b.step===0 ? Math.round(b.pct*100)+" %" : ""; }); }
+}
+function busyStart(kind){ state.busy={kind,step:0,pct:0}; state.finished=null; showScan(); render(); }
+function busyStep(i){ if(!state.busy) return; state.busy.step=i; state.busy.pct=null; updBusy(); }
+function busyProgress(p,label){ if(!state.busy) return; state.busy.pct=p; updBusy(); }
+function busyEnd(msg){
+  state.busy=null; const sc=$("#scan"); if(sc) sc.remove();
+  if(msg){
+    state.finished=msg;
+    const w=$("#pvwrap"); if(w){ const o=el("div","doneov"); o.setAttribute("aria-hidden","true"); const bd=el("div","badge"); const ck=el("div","ck"); ck.append(svg(CK)); bd.append(ck,el("span",null,"Analyse terminée")); o.append(bd); w.append(o); setTimeout(()=>o.remove(),2900); }
+    const t=$("#toast"); t.replaceChildren(svg(CK),document.createTextNode(msg)); t.classList.add("show"); clearTimeout(window.__toastT); window.__toastT=setTimeout(()=>t.classList.remove("show"),4200);
+  }
+  render();
+}
+function renderBoxes(){
+  const bl=$("#boxes"); if(!bl) return; bl.replaceChildren();
+  const els=(state.elements||[]).filter(e=>e.m && e.img===state.sel && e.type!=="logo");
+  const tog=$("#bx-tog"); tog.hidden = state.kind!=="image" || !els.length;
+  if(state.kind!=="image" || !$("#bx-chk").checked || state.busy) return;
+  els.forEach((e,i)=>{ const d=el("div","bx"+(e.m.ratio<(e.big?3:4.5)?" bad":"")); const [x,y,w,h]=e.box;
+    d.style.left=x+"%"; d.style.top=y+"%"; d.style.width=w+"%"; d.style.height=h+"%"; d.style.animationDelay=(i*60)+"ms"; d.title=`${e.texte} : ${fr(e.m.ratio)}:1`; bl.append(d); });
+}
+
 function render(){
   steps();
   const R=evaluate(); state.lastR=R;
@@ -689,6 +781,12 @@ function render(){
   const fix=[],check=[],ok=[],na=[];
   for(const id of ORDER){ const r=R[id]; if(r.s==="fix") fix.push(id); else if(r.s==="check") (state.checked.has(id)?ok:check).push(id); else if(r.s==="ok") ok.push(id); else na.push(id); }
   const res=$("#res"); res.replaceChildren();
+  if(state.busy){
+    const card=el("div","busy"); card.id="busy-card"; const st=el("strong"); st.append(el("span","spin"),document.createTextNode("Analyse en cours…")); card.append(st);
+    const ol=document.createElement("ol"); for(const s of BUSY_STEPS[state.busy.kind]){ const li=document.createElement("li"); const c=el("span","st"); c.append(svg(CK)); li.append(c,el("span",null,s),el("span","pc")); ol.append(li); }
+    card.append(ol); res.append(card);
+  } else if(state.finished){ const f=el("div","finished"); f.append(svg(CK),document.createTextNode(state.finished)); res.append(f); }
+  const body=el("div",state.busy?"dim":""); const resRoot=res; 
   // bandeau
   const head=el("div","head "+(fix.length?"fix":check.length?"check":"ok"));
   const ic=el("div","ic"); ic.append(svg(fix.length?P_X:check.length?P_EYE:P_OK));
@@ -696,23 +794,23 @@ function render(){
   if(fix.length){ tx.append(el("strong",null,`${fix.length} ${fix.length>1?"choses":"chose"} à corriger avant de publier`)); tx.append(el("span",null,check.length?`Puis ${check.length} point${check.length>1?"s":""} à vérifier toi-même.`:"Le reste est bon.")); }
   else if(check.length){ tx.append(el("strong",null,`Presque prêt : ${check.length} point${check.length>1?"s":""} à vérifier toi-même`)); tx.append(el("span",null,"Coche chaque point une fois vérifié.")); }
   else { tx.append(el("strong",null,"Prêt à publier")); tx.append(el("span",null,`Les ${ok.length} règles qui concernent ce post sont respectées.`)); }
-  head.append(ic,tx); res.append(head);
+  head.append(ic,tx); body.append(head);
   const tagTxt=window.__TAG__||"Essentiel";
   const title=(id)=>{ const t=el("div","t",INFO[id].t); if(INFO[id].g){ t.append(el("span","tag",tagTxt)); } return t; };
   if(fix.length){
-    const h=el("div","grp-h fix"); h.append(el("span","c",String(fix.length)),document.createTextNode("À corriger")); res.append(h);
+    const h=el("div","grp-h fix"); h.append(el("span","c",String(fix.length)),document.createTextNode("À corriger")); body.append(h);
     for(const id of fix){ const r=R[id]; const it=el("div","item fix"); it.append(title(id)); if(r.d) it.append(el("div","why",r.d));
       const how=el("div","how"); how.append(el("b",null,"Comment corriger : "),document.createTextNode(INFO[id].how)); it.append(how);
       const g=GO[id]; if(g && !(g==="pick"&&state.kind!=="image")){ const gb=el("button","btn primary small go",GO_LABEL[g]+" →"); gb.type="button"; gb.onclick=()=>goTo(g); it.append(gb); }
       for(const sg of (r.sug||[])){ const box=el("div","sug"); box.append(el("b",null,sg.label+" : "),document.createTextNode(sg.text)); const b=el("button","btn primary small","Utiliser"); b.type="button";
         b.onclick=()=>{ state.alts[sg.target]=sg.text; const ta=document.getElementById("alt-"+sg.target); if(ta) ta.value=sg.text; render(); }; box.append(b); it.append(box); }
-      res.append(it); }
+      body.append(it); }
   }
   if(check.length){
-    const h=el("div","grp-h check"); h.append(el("span","c",String(check.length)),document.createTextNode("À vérifier toi-même")); res.append(h);
+    const h=el("div","grp-h check"); h.append(el("span","c",String(check.length)),document.createTextNode("À vérifier toi-même")); body.append(h);
     for(const id of check){ const r=R[id]; const lab=el("label","chk"); const cb=document.createElement("input"); cb.type="checkbox";
       cb.onchange=()=>{ state.checked.add(id); render(); };
-      const b=el("div"); b.append(title(id)); b.append(el("div","q",r.d||INFO[id].how)); lab.append(cb,b); res.append(lab); }
+      const b=el("div"); b.append(title(id)); b.append(el("div","q",r.d||INFO[id].how)); lab.append(cb,b); body.append(lab); }
   }
   if(ok.length){
     const d=document.createElement("details"); d.className="okl"; const s=document.createElement("summary");
@@ -720,9 +818,10 @@ function render(){
     for(const id of ok){ const r=R[id]; const row=el("div","okrow"); row.append(svg(P_OK)); const b=el("div",null,INFO[id].t);
       b.append(el("small",null,state.checked.has(id)&&r.s==="check"?"Vérifié par toi.":(r.d||""))); if(state.checked.has(id)&&r.s==="check"){ const u=el("button","linkbtn","Décocher"); u.type="button"; u.style.fontSize="12.5px"; u.onclick=(e)=>{e.preventDefault(); state.checked.delete(id); render();}; b.append(u); }
       row.append(b); d.append(row); }
-    res.append(d);
+    body.append(d);
   }
-  if(na.length) res.append(el("p","na",`${na.length} règle${na.length>1?"s ne concernent":" ne concerne"} pas ce post (par exemple les règles sur les vidéos pour une image).`));
+  if(na.length) body.append(el("p","na",`${na.length} règle${na.length>1?"s ne concernent":" ne concerne"} pas ce post (par exemple les règles sur les vidéos pour une image).`));
+  res.append(body); updBusy(); renderBoxes();
   const mb=$("#mbar"); mb.classList.add("on");
   $("#mbar-txt").textContent = fix.length?`${fix.length} à corriger`+(check.length?` · ${check.length} à vérifier`:""):check.length?`${check.length} à vérifier`:"Prêt à publier";
   $("#mbar-dot").style.background = fix.length?"var(--fix)":check.length?"var(--check)":"var(--ok)";
@@ -731,7 +830,7 @@ function render(){
 }
 
 /* ---------- fichiers ---------- */
-function resetChecks(){ state.noSrt=false; state.aiSource=null; if(window.__onReset) window.__onReset(); state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.pickMode=0; state.checked=new Set(); state.sel=0; state.srt=null; state.srtName=""; $("#srt-name").textContent=""; $("#srt").value=""; }
+function resetChecks(){ state.finished=null; state.noSrt=false; state.aiSource=null; if(window.__onReset) window.__onReset(); state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.pickMode=0; state.checked=new Set(); state.sel=0; state.srt=null; state.srtName=""; $("#srt-name").textContent=""; $("#srt").value=""; }
 async function handleFiles(files){
   const list=[...files]; if(!list.length) return;
   const vids=list.filter(f=>f.type.startsWith("video/")), imgs=list.filter(f=>f.type.startsWith("image/"));
@@ -783,6 +882,7 @@ function reportText(){
 async function copyText(t,okMsg){ try{ await navigator.clipboard.writeText(t); setStatus(okMsg); }catch{ setStatus("Copie impossible ici : sélectionne le texte et fais Cmd+C."); } }
 $("#btn-copycap").onclick=()=>copyText(state.caption,"Légende copiée : colle-la dans Instagram ou Facebook.");
 $("#btn-copyalt").onclick=()=>copyText(state.alts.filter(a=>a&&a.trim()).map((a,i,arr)=>arr.length>1?`Image ${i+1} : ${a.trim()}`:a.trim()).join("\n"),"Description copiée : colle-la dans « Écrire un texte alternatif ».");
+$("#bx-chk").onchange=renderBoxes;
 $("#btn-nosrt").onclick=()=>{ state.noSrt=true; render(); };
 $("#mbar-btn").onclick=()=>$("#h-res").scrollIntoView({behavior:"smooth",block:"start"});
 document.querySelectorAll('input[name=pf]').forEach(r=>r.addEventListener("change",()=>render()));
@@ -814,18 +914,18 @@ function classify(t,hPx){
 async function getOcr(){
   if(ocrWorker) return ocrWorker;
   if(!window.Tesseract) throw new Error("module de lecture non chargé");
-  ocrWorker = await Tesseract.createWorker("fra",1,{logger:(m)=>{ if(m.status==="recognizing text") $("#ocr-msg").textContent=`Lecture des textes du visuel… ${Math.round((m.progress||0)*100)} %`; else if(/loading|initializ/.test(m.status||"")) $("#ocr-msg").textContent="Préparation de la lecture automatique (la première fois, quelques secondes)…"; }});
+  ocrWorker = await Tesseract.createWorker("fra",1,{logger:(m)=>{ if(m.status==="recognizing text"){ const p=((window.__ocrI||0)+(m.progress||0))/(window.__ocrN||1); $("#ocr-msg").textContent=`Lecture des textes du visuel… ${Math.round(p*100)} %`; busyProgress(p); } else if(/loading|initializ/.test(m.status||"")){ $("#ocr-msg").textContent="Préparation de la lecture automatique (la première fois, quelques secondes)…"; busyProgress(0,"Préparation de la lecture…"); } }});
   return ocrWorker;
 }
 async function runOcr(){
   if(state.kind!=="image"||state.example) return;
-  const run=++ocrRun; const box=$("#ocr-box"); box.hidden=false; $("#btn-ocr").disabled=true;
+  const run=++ocrRun; const box=$("#ocr-box"); box.hidden=false; $("#btn-ocr").disabled=true; busyStart("ocr"); window.__ocrN=state.media.length; window.__ocrI=0;
   try{
     const w=await getOcr(); const els=[]; let full="";
     for(let i=0;i<state.media.length;i++){
       const m=state.media[i];
       $("#ocr-msg").textContent=`Lecture des textes${state.media.length>1?` de l'image ${i+1}/${state.media.length}`:""}…`;
-      const {data}=await w.recognize(m.canvas);
+      window.__ocrI=i; const {data}=await w.recognize(m.canvas);
       if(run!==ocrRun) return;
       full+="\n"+(data.text||"");
       for(const ln of (data.lines||[])){
@@ -837,14 +937,17 @@ async function runOcr(){
         els.push({texte:t.slice(0,80),type,img:i,box,m:meas,big:(type==="titre"||type==="chiffre")&&meas.hPx>=60});
       }
     }
+    busyStep(1); await new Promise(r=>setTimeout(r,350));
     const infos=keyInfos(full);
     state.ai={ moins18:/(^|[^\d])[-–]\s?18(?!\d)|\b18\s?ans\b|moins de 18/i.test(full), mise_en_garde:/risque|dangereux|addiction|joueurs.?info|jouer comporte/i.test(full),
       infos_cles:infos, infos_absentes_legende: state.caption.trim()?infos.filter(x=>!inCaption(x,state.caption)):[] };
     state.aiSource="ocr"; state.ocrText=full;
     state.elements=els; state.elementsSource="lecture automatique";
     $("#ocr-msg").textContent = els.length ? `${els.length} ligne${els.length>1?"s":""} de texte lue${els.length>1?"s":""} : contraste et taille mesurés automatiquement.` : "Aucun texte lisible trouvé automatiquement. Utilise « Mesurer un contraste » pour les textes importants.";
-    render();
+    busyStep(2); await new Promise(r=>setTimeout(r,350));
+    busyEnd(els.length?`Analyse terminée : ${els.length} ligne${els.length>1?"s":""} de texte lue${els.length>1?"s":""} et mesurée${els.length>1?"s":""}.`:"Analyse terminée : aucun texte lisible trouvé automatiquement.");
   }catch(e){
+    busyEnd(null);
     $("#ocr-msg").textContent="La lecture automatique n'a pas pu se lancer (connexion ?). Les autres contrôles marchent.";
   }finally{ $("#btn-ocr").disabled=false; }
 }
@@ -924,14 +1027,14 @@ $("#ai-run").onclick=async()=>{
   if(!state.media.length){ $("#ai-msg").textContent="Ajoute d'abord ton visuel (étape 1)."; return; }
   if(!key){ $("#ai-msg").textContent="Colle d'abord ta clé dans le champ « Clé »."; $("#ai-key").focus(); return; }
   LS("aa-key-"+prov,key);
-  extCtl=new AbortController(); $("#ai-run").disabled=true; $("#ai-stop").hidden=false; $("#ai-msg").textContent=`${PROV[prov].name} analyse le visuel… (souvent 10 à 40 secondes)`;
+  extCtl=new AbortController(); busyStart("ia"); $("#ai-run").disabled=true; $("#ai-stop").hidden=false; $("#ai-msg").textContent=`${PROV[prov].name} analyse le visuel… (souvent 10 à 40 secondes)`;
   try{
     const vid=state.kind==="video"; let tgt, blobs;
     if(vid){ const m=state.media[0]; tgt=[]; for(const p of [0.15,0.5,0.88]) tgt.push(await grabFrame(m,m.dur*p)); }
     else tgt=state.media.slice(0,6);
     blobs=await Promise.all(tgt.map(t=>shrink(t.canvas)));
     const imgs=await Promise.all(blobs.map(b64));
-    const text=await callProvider(prov,key,model,buildPrompt(tgt.length,vid),imgs,extCtl.signal);
+    busyStep(1); const text=await callProvider(prov,key,model,buildPrompt(tgt.length,vid),imgs,extCtl.signal);
     const ai=parseJson(text); if(!ai||typeof ai!=="object") throw new Error("réponse illisible, relance l'analyse");
     state.ai=ai; state.aiSource="ia";
     const els=(Array.isArray(ai.elements_texte)?ai.elements_texte:[]).slice(0,25).map(e=>{
@@ -941,11 +1044,12 @@ $("#ai-run").onclick=async()=>{
       return {texte:String(e.texte||"").slice(0,80),type,img,box,m,big:(type==="titre"||type==="chiffre")&&m&&m.hPx>=60};
     }).filter(Boolean);
     if(els.length){ state.elements=els; state.elementsSource="IA"; }
-    $("#ai-msg").textContent=`Analyse terminée avec ${PROV[prov].name}.`; render();
+    busyStep(2); await new Promise(r=>setTimeout(r,300));
+    $("#ai-msg").textContent=`Analyse terminée avec ${PROV[prov].name}.`; busyEnd(`Analyse terminée avec ${PROV[prov].name}.`);
   }catch(e){
     if(e?.name==="AbortError") $("#ai-msg").textContent="Analyse arrêtée.";
     else { const m=String(e?.message||e); $("#ai-msg").textContent = /key|api.?key|401|403|permission|unauth|invalid x-api/i.test(m) ? "La clé est refusée : vérifie que tu l'as copiée en entier, ou crée-en une nouvelle." : /quota|rate|429|limit/i.test(m) ? "Limite d'utilisation atteinte : réessaie plus tard." : /model|not found|404/i.test(m) ? "Ce modèle n'est pas disponible : remets le modèle proposé par défaut." : /Failed to fetch|NetworkError/i.test(m) ? "Impossible de joindre le service : vérifie ta connexion." : "L'analyse a échoué : "+m.slice(0,140); }
-  }finally{ $("#ai-run").disabled=false; $("#ai-stop").hidden=true; extCtl=null; }
+  }finally{ if(state.busy) busyEnd(null); $("#ai-run").disabled=false; $("#ai-stop").hidden=true; extCtl=null; }
 };
 $("#ai-stop").onclick=()=>extCtl?.abort();
 
