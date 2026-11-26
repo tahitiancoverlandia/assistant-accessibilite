@@ -320,6 +320,7 @@ details.tool[open]>summary .opt:last-child{display:none}
               </div>
               <p class="keyhelp"><span id="ai-keyhelp"></span> <a id="ai-keylink" href="#" target="_blank" rel="noopener noreferrer"></a></p>
               <details class="adv"><summary>Réglages avancés</summary><label>Modèle<input type="text" id="ai-model" spellcheck="false"></label><button class="linkbtn" type="button" id="ai-forget">Effacer ma clé de ce navigateur</button></details>
+              <label class="boxtog" style="margin-top:10px"><input type="checkbox" id="ai-auto"> Lancer aussi cette analyse IA automatiquement à chaque dépôt</label>
               <div class="actions" style="margin-top:12px"><button class="btn primary small" id="ai-run" type="button">Analyser avec l'IA</button><button class="btn ghost small" id="ai-stop" type="button" hidden>Arrêter</button></div>
               <p class="status" id="ai-msg"></p>
               <p class="keyhelp">Les images envoyées partent chez le service choisi. Avec une clé gratuite, il peut s'en servir pour améliorer ses produits : évite-le pour des visuels confidentiels pas encore sortis.</p>
@@ -864,8 +865,8 @@ async function handleFiles(files){
     if(vids.length){ const m=await loadVideo(vids[0]); state.media=[m]; state.kind="video"; state.videoInfo={dur:m.dur}; state.alts=[]; }
     else { state.media=await Promise.all(imgs.slice(0,10).map(loadImage)); state.kind="image"; state.alts=state.media.map(()=> ""); }
     renderMedia(); renderPick(); render(); setStatus(imgs.length>10?"Seules les 10 premières images sont gardées (limite d'un carrousel).":"");
-    if(state.kind==="image" && window.__afterLoad) window.__afterLoad();
-    if(state.kind==="video") analyseFlashes(state.media[0]).catch(()=>{ state.flashBusy=false; setStatus("Impossible d'analyser les clignotements de cette vidéo."); render(); });
+    if(state.kind==="image" && window.__onImage) window.__onImage();
+    if(state.kind==="video") analyseFlashes(state.media[0]).then(()=>window.__onVideo&&window.__onVideo()).catch(()=>{ state.flashBusy=false; if(state.busy) busyEnd(null); setStatus("Impossible d'analyser les clignotements de cette vidéo."); render(); window.__onVideo&&window.__onVideo(); });
   }catch(err){ setStatus("Impossible de lire ce fichier. Essaie un autre format."); }
 }
 const drop=$("#drop"), fileIn=$("#file");
@@ -876,7 +877,12 @@ fileIn.onchange=()=>{ handleFiles(fileIn.files); fileIn.value=""; };
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.remove("over");}));
 document.addEventListener("dragover",(e)=>e.preventDefault());
 document.addEventListener("drop",(e)=>{ e.preventDefault(); drop.classList.remove("over"); if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files); });
-$("#caption").oninput=(e)=>{ state.caption=e.target.value; render(); };
+/* quand la légende change après une analyse, on recompare avec ce qui a été lu sur le visuel */
+function capHas(info,cap){ const d=String(info).replace(/[^\d]/g,""), c=cap.replace(/[^\d]/g,""); if(d.length>=2&&c.includes(d)) return true; return cap.toLowerCase().includes(String(info).toLowerCase()); }
+function syncAiCaption(){ const a=state.ai; if(!a) return; const cap=state.caption;
+  if(Array.isArray(a.infos_cles)) a.infos_absentes_legende = cap.trim()? a.infos_cles.filter(x=>!capHas(x,cap)) : [];
+  if(a.legende) delete a.legende; if(a.hashtags) delete a.hashtags; }
+$("#caption").oninput=(e)=>{ state.caption=e.target.value; syncAiCaption(); render(); };
 document.querySelectorAll('input[name=pf]').forEach(r=>r.onchange=()=>{ state.platform=r.value; render(); });
 $("#srt").onchange=async(e)=>{ const f=e.target.files[0]; if(!f) return; const cues=parseSRT(await f.text()); state.srt=cues.length?cues:null; state.srtName=f.name; $("#srt-name").textContent=cues.length?`${cues.length} sous-titres lus`:"Aucun sous-titre reconnu dans ce fichier"; render(); };
 
@@ -939,7 +945,7 @@ $("#btn-fixcap").onclick=async()=>{
   try{
     const j=await llmJson(capPrompt(),capCtl.signal);
     const txt=String(j?.legende||"").trim(); if(!txt) throw {code:"invalid_json"};
-    capPrev=state.caption; state.caption=txt; $("#caption").value=txt; render();
+    capPrev=state.caption; state.caption=txt; $("#caption").value=txt; syncAiCaption(); render();
     const ch=Array.isArray(j.changements)?j.changements.map(String).filter(Boolean):[];
     capMsg("ok", ch.length?`Légende corrigée par ${LLM_NAME} : ${ch.length} changement${ch.length>1?"s":""}`:`Légende vérifiée par ${LLM_NAME} : rien à changer`, ch,
       ()=>{ if(capPrev!=null){ state.caption=capPrev; $("#caption").value=capPrev; capPrev=null; render(); capMsg("ok","Ta légende d'origine est remise."); } });
@@ -1022,10 +1028,6 @@ async function runOcr(){
   }finally{ $("#btn-ocr").disabled=false; }
 }
 $("#btn-ocr").onclick=runOcr;
-// la légende change : on recompare les infos lues avec la légende
-const _capHandler=$("#caption").oninput;
-$("#caption").oninput=(e)=>{ if(state.aiSource==="ocr"&&state.ai){ state.ai.infos_absentes_legende=e.target.value.trim()?(state.ai.infos_cles||[]).filter(x=>!inCaption(x,e.target.value)):[]; } _capHandler(e); };
-
 /* ---------- analyse IA complète (optionnelle, avec la clé de chacun) ---------- */
 const PROV={
   gemini:{name:"Gemini (Google)",model:"gemini-2.5-flash",keyUrl:"https://aistudio.google.com/apikey",keyHelp:"Gratuit dans la limite d'un quota. Va sur aistudio.google.com/apikey, connecte-toi avec un compte Google, clique sur « Create API key » et copie la clé."},
@@ -1042,6 +1044,9 @@ $("#ai-prov").value=LS("aa-prov")||"gemini"; syncProv();
 $("#ai-prov").onchange=()=>{ LS("aa-prov",$("#ai-prov").value); syncProv(); };
 $("#ai-key").onchange=()=>{ const v=$("#ai-key").value.trim(); LS("aa-key-"+$("#ai-prov").value, v||null); };
 $("#ai-model").onchange=()=>{ LS("aa-model-"+$("#ai-prov").value,$("#ai-model").value.trim()||null); };
+$("#ai-auto").checked = LS("aa-auto")==="1";
+$("#ai-auto").onchange=()=>LS("aa-auto",$("#ai-auto").checked?"1":null);
+function autoIA(){ if($("#ai-auto").checked && $("#ai-key").value.trim() && state.media.length && !state.example) $("#ai-run").click(); }
 $("#ai-forget").onclick=()=>{ LS("aa-key-"+$("#ai-prov").value,null); $("#ai-key").value=""; $("#ai-msg").textContent="Clé effacée de ce navigateur."; };
 
 function buildPrompt(nImg,vid){
@@ -1130,7 +1135,7 @@ async function llmJson(prompt,signal){
   const t=await callProvider(prov,key,model,prompt,[],signal); const j=parseJson(t); if(!j) throw {code:"invalid_json"}; return j;
 }
 
-window.__afterLoad=runOcr; window.__onReset=()=>{ ocrRun++; const o=document.getElementById('ocr-box'); if(o) o.hidden=true; };
+window.__onImage=async()=>{ await runOcr(); autoIA(); }; window.__onVideo=()=>autoIA(); window.__onReset=()=>{ ocrRun++; const o=document.getElementById('ocr-box'); if(o) o.hidden=true; };
 
 $("#btn-dl").hidden=false;
 $("#btn-dl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([reportText()],{type:"text/plain;charset=utf-8"})); a.download="controle-accessibilite-"+new Date().toISOString().slice(0,10)+".txt"; document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); };
