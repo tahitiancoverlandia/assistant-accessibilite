@@ -59,8 +59,28 @@ h2{font-family:var(--f-head);font-size:19px;letter-spacing:-.01em;margin:0 0 4px
 /* étapes */
 .step{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:16px 0;border-top:1px solid var(--line)}
 .step:first-of-type{border-top:0;padding-top:4px}
-#st1{border:2px solid var(--sun);border-radius:14px;padding:14px 14px 16px;background:var(--sun-soft);margin-bottom:10px}
-#st1+.step{border-top:0}
+.step{transition:background .2s,border-color .2s}
+.step.current{border:2px solid var(--sun);border-radius:14px;padding:14px 14px 16px;background:var(--sun-soft);margin-block:6px}
+.step.current+.step{border-top:0}
+.step.current .num{background:var(--sun);color:#3A2A00}
+.step .now{display:none;margin-left:8px;font-size:11px;font-weight:700;background:var(--sun);color:#3A2A00;border-radius:99px;padding:1px 8px;vertical-align:2px}
+.step.current .now{display:inline-block}
+.progress{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.progress .bar2{flex:1;height:6px;border-radius:99px;background:var(--soft);overflow:hidden}
+.progress .bar2 i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
+.progress span{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.igprev{margin-top:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.igprev .lab{font-size:11.5px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;display:flex;justify-content:space-between;gap:8px}
+.igprev .txt{white-space:pre-wrap;word-break:break-word}
+.igprev .more{color:var(--faint)}
+.go{margin-top:10px}
+.flash-target{animation:flashT 1.4s ease}
+@keyframes flashT{0%,100%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 0 4px var(--sun)}}
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:none;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(16,24,40,.08)}
+.mbar button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;background:none;color:var(--ink);font-weight:600;font-size:14.5px;cursor:pointer;padding:4px 0}
+.mbar .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
+@media (max-width:940px){.mbar.on{display:block} main{padding-bottom:70px}}
+@media (prefers-reduced-motion:reduce){.flash-target{animation:none}}
 .num{width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--muted);font-weight:700;font-size:13.5px;display:grid;place-items:center}
 .step.done .num{background:var(--ok);color:#fff}
 .step.done .num span{display:none}
@@ -79,8 +99,8 @@ h2{font-family:var(--f-head);font-size:19px;letter-spacing:-.01em;margin:0 0 4px
 .drop p{margin:4px 0 0;color:var(--faint);font-size:13px}
 .linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .linkbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
-.preview{position:relative;background:var(--soft);border-radius:12px;overflow:hidden;display:grid;place-items:center;max-height:440px}
-.preview canvas,.preview video{display:block;max-width:100%;max-height:440px;width:auto;height:auto}
+.preview{position:relative;background:var(--soft);border-radius:12px;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;align-items:center;max-height:440px}
+.preview canvas,.preview video{display:block;max-width:100%;max-height:440px;width:auto;height:auto;min-width:0}
 .preview.picking canvas{cursor:crosshair}
 .strip{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .strip button{width:52px;height:64px;border-radius:8px;border:2px solid transparent;padding:0;background:var(--soft);overflow:hidden;cursor:pointer}
@@ -194,12 +214,13 @@ details.tool[open]>summary .opt:last-child{display:none}
   <div class="grid">
     <section class="card" aria-labelledby="h-pub">
       <h2 id="h-pub">Ta publication</h2>
-      <p class="sub">Remplis les 3 étapes. Le résultat se met à jour tout seul.</p>
+      <p class="sub">Suis les étapes : le cadre jaune montre ce qu'il reste à faire. Le résultat se met à jour tout seul.</p>
+      <div class="progress" aria-live="polite"><div class="bar2" aria-hidden="true"><i id="prog-bar" style="width:0%"></i></div><span id="prog-txt">Étape 1 sur 3</span></div>
 
       <div class="step" id="st1">
         <div class="num"><span>1</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
         <div style="min-width:0">
-          <h3>Ajoute ton visuel</h3>
+          <h3>Ajoute ton visuel<span class="now">À faire</span></h3>
           <p class="hint">Une image, plusieurs images pour un carrousel, ou une vidéo.</p>
           <div id="drop-wrap">
             <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="drop-help">
@@ -245,9 +266,10 @@ details.tool[open]>summary .opt:last-child{display:none}
       <div class="step" id="st2">
         <div class="num"><span>2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
         <div style="min-width:0">
-          <h3><label for="caption">Colle ta légende</label></h3>
+          <h3><label for="caption">Colle ta légende</label><span class="now">À faire</span></h3>
           <p class="hint">Le texte exact que tu vas publier sous le visuel, avec les hashtags.</p>
           <textarea id="caption" rows="5" placeholder="Ex. Jackpot de 2,8 milliards de francs ce samedi. Jouer comporte des risques."></textarea>
+          <div class="igprev" id="igprev" hidden><div class="lab"><span id="igprev-l">Ce qu'on voit sur Instagram avant « plus »</span><span id="igprev-n"></span></div><div class="txt" id="igprev-t"></div></div>
         </div>
       </div>
 
@@ -255,7 +277,7 @@ details.tool[open]>summary .opt:last-child{display:none}
         <div class="num"><span>3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
         <div style="min-width:0">
           <div id="alt-zone">
-            <h3>Décris ton image <span class="opt">(texte alternatif)</span></h3>
+            <h3>Décris ton image <span class="opt">(texte alternatif)</span><span class="now">À faire</span></h3>
             <details class="help"><summary>C'est quoi&nbsp;?</summary><div>
               <p>Une ou deux phrases qui disent ce que montre l'image. Elles sont invisibles sur le post, mais lues à voix haute aux personnes aveugles ou malvoyantes.</p>
               <p><b>Où l'écrire&nbsp;:</b> Instagram&nbsp;: Paramètres avancés &gt; Écrire un texte alternatif. Facebook&nbsp;: Modifier la photo &gt; Texte alternatif.</p>
@@ -264,9 +286,10 @@ details.tool[open]>summary .opt:last-child{display:none}
             <div class="alts" id="alts"><p class="hint" style="margin:0">Ajoute d'abord ton visuel (étape 1).</p></div>
           </div>
           <div id="srt-zone" hidden>
-            <h3>Ajoute les sous-titres <span class="opt">(fichier .srt, si tu l'as)</span></h3>
+            <h3>Ajoute les sous-titres <span class="opt">(fichier .srt, si tu l'as)</span><span class="now">À faire</span></h3>
             <p class="hint">Le fichier texte des sous-titres de ta vidéo. Il permet de vérifier leur rythme et leur longueur.</p>
             <input type="file" id="srt" accept=".srt,.vtt,text/plain" aria-label="Fichier de sous-titres"> <span id="srt-name" class="hint"></span>
+            <p class="hint" style="margin-top:8px"><button class="linkbtn" type="button" id="btn-nosrt">Je n'ai pas de fichier de sous-titres</button></p>
           </div>
         </div>
       </div>
@@ -283,6 +306,8 @@ details.tool[open]>summary .opt:last-child{display:none}
       </div>
       <div id="res" aria-live="polite" hidden></div>
       <div class="actions" id="res-actions" hidden>
+        <button class="btn ghost" id="btn-copycap" type="button">Copier la légende</button>
+        <button class="btn ghost" id="btn-copyalt" type="button">Copier la description</button>
         <button class="btn ghost" id="btn-copy" type="button">Copier le rapport</button>
         <button class="btn ghost" id="btn-dl" type="button" hidden>Télécharger le rapport</button>
       </div>
@@ -290,6 +315,7 @@ details.tool[open]>summary .opt:last-child{display:none}
     </section>
   </div>
 </main>
+<div class="mbar" id="mbar"><button type="button" id="mbar-btn"><span><i class="dot" id="mbar-dot"></i><span id="mbar-txt"></span></span><span aria-hidden="true">Voir ↓</span></button></div>
 <script>
 (() => {
 
@@ -622,10 +648,36 @@ $("#preview").addEventListener("click",(e)=>{
 });
 
 function steps(){
-  $("#st1").classList.toggle("done",state.media.length>0);
-  $("#st2").classList.toggle("done",state.caption.trim().length>0);
-  const s3 = state.kind==="image" ? state.media.every((_,i)=>(state.alts[i]||"").trim().length>=20) : state.kind==="video" ? !!state.srt : false;
-  $("#st3").classList.toggle("done",s3);
+  const d1=state.media.length>0, d2=state.caption.trim().length>0;
+  const d3 = state.kind==="image" ? state.media.every((_,i)=>(state.alts[i]||"").trim().length>=20) : state.kind==="video" ? (!!state.srt||state.noSrt) : false;
+  const done=[d1,d2,d3]; const cur=done.indexOf(false);
+  ["#st1","#st2","#st3"].forEach((s,i)=>{ $(s).classList.toggle("done",done[i]); $(s).classList.toggle("current",i===cur); });
+  const n=done.filter(Boolean).length; $("#prog-bar").style.width=(n/3*100)+"%";
+  $("#prog-txt").textContent = cur<0 ? "Les 3 étapes sont faites" : `Étape ${cur+1} sur 3`;
+  // aperçu de la légende
+  const cap=state.caption.trim(), pv=$("#igprev");
+  pv.hidden=!cap;
+  if(cap){ const ig=state.platform==="instagram";
+    $("#igprev-l").textContent = ig ? "Ce qu'on voit sur Instagram avant « plus »" : "Début de la légende";
+    $("#igprev-n").textContent = `${state.caption.length} caractères`;
+    const t=$("#igprev-t"); t.replaceChildren(); const lim=ig?125:250;
+    if(state.caption.length>lim){ t.append(document.createTextNode(state.caption.slice(0,lim).trimEnd()+"… ")); t.append(el("span","more","plus")); }
+    else t.append(document.createTextNode(state.caption)); }
+}
+/* aller corriger : emmène au bon endroit */
+const GO={"1.1":"alt","1.2":"alt","1.4":"alt","1.3":"cap","2.2":"cap","3.1":"cap","3.2":"cap","3.3":"cap","3.4":"cap","3.5":"cap","1.5":"pick","1.6":"file","1.7":"file","P1":"file","P2":"file","2.1":"srt","2.5":"srt","2.3":"file","2.4":"file"};
+const GO_LABEL={alt:"Écrire la description",cap:"Modifier la légende",pick:"Mesurer un contraste",file:"Remplacer le visuel corrigé",srt:"Ajouter le fichier .srt"};
+function goTo(kind){
+  let t=null;
+  if(kind==="alt"){ const i=state.media.findIndex((_,k)=>(state.alts[k]||"").trim().length<20); t=document.getElementById("alt-"+(i<0?0:i)); }
+  else if(kind==="cap") t=$("#caption");
+  else if(kind==="srt") t=$("#srt");
+  else if(kind==="pick"){ t=$("#pip-box"); if(!state.pickMode){ state.pick=[]; state.pickMode=1; renderPick(); } }
+  else if(kind==="file") t=$("#btn-change");
+  if(!t||t.closest("[hidden]")) return;
+  t.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
+  t.classList.remove("flash-target"); void t.offsetWidth; t.classList.add("flash-target");
+  if(t.focus) setTimeout(()=>t.focus({preventScroll:true}),350);
 }
 
 function render(){
@@ -633,7 +685,7 @@ function render(){
   const R=evaluate(); state.lastR=R;
   const started=state.media.length>0||state.caption.trim().length>0;
   $("#res-empty").hidden=started; $("#res").hidden=!started; $("#res-actions").hidden=!started;
-  if(!started) return;
+  if(!started){ $("#mbar").classList.remove("on"); return; }
   const fix=[],check=[],ok=[],na=[];
   for(const id of ORDER){ const r=R[id]; if(r.s==="fix") fix.push(id); else if(r.s==="check") (state.checked.has(id)?ok:check).push(id); else if(r.s==="ok") ok.push(id); else na.push(id); }
   const res=$("#res"); res.replaceChildren();
@@ -651,6 +703,7 @@ function render(){
     const h=el("div","grp-h fix"); h.append(el("span","c",String(fix.length)),document.createTextNode("À corriger")); res.append(h);
     for(const id of fix){ const r=R[id]; const it=el("div","item fix"); it.append(title(id)); if(r.d) it.append(el("div","why",r.d));
       const how=el("div","how"); how.append(el("b",null,"Comment corriger : "),document.createTextNode(INFO[id].how)); it.append(how);
+      const g=GO[id]; if(g && !(g==="pick"&&state.kind!=="image")){ const gb=el("button","btn primary small go",GO_LABEL[g]+" →"); gb.type="button"; gb.onclick=()=>goTo(g); it.append(gb); }
       for(const sg of (r.sug||[])){ const box=el("div","sug"); box.append(el("b",null,sg.label+" : "),document.createTextNode(sg.text)); const b=el("button","btn primary small","Utiliser"); b.type="button";
         b.onclick=()=>{ state.alts[sg.target]=sg.text; const ta=document.getElementById("alt-"+sg.target); if(ta) ta.value=sg.text; render(); }; box.append(b); it.append(box); }
       res.append(it); }
@@ -670,10 +723,15 @@ function render(){
     res.append(d);
   }
   if(na.length) res.append(el("p","na",`${na.length} règle${na.length>1?"s ne concernent":" ne concerne"} pas ce post (par exemple les règles sur les vidéos pour une image).`));
+  const mb=$("#mbar"); mb.classList.add("on");
+  $("#mbar-txt").textContent = fix.length?`${fix.length} à corriger`+(check.length?` · ${check.length} à vérifier`:""):check.length?`${check.length} à vérifier`:"Prêt à publier";
+  $("#mbar-dot").style.background = fix.length?"var(--fix)":check.length?"var(--check)":"var(--ok)";
+  $("#btn-copyalt").hidden = state.kind!=="image" || !state.alts.some(a=>a&&a.trim());
+  $("#btn-copycap").hidden = !state.caption.trim();
 }
 
 /* ---------- fichiers ---------- */
-function resetChecks(){ state.aiSource=null; if(window.__onReset) window.__onReset(); state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.pickMode=0; state.checked=new Set(); state.sel=0; state.srt=null; state.srtName=""; $("#srt-name").textContent=""; $("#srt").value=""; }
+function resetChecks(){ state.noSrt=false; state.aiSource=null; if(window.__onReset) window.__onReset(); state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.pickMode=0; state.checked=new Set(); state.sel=0; state.srt=null; state.srtName=""; $("#srt-name").textContent=""; $("#srt").value=""; }
 async function handleFiles(files){
   const list=[...files]; if(!list.length) return;
   const vids=list.filter(f=>f.type.startsWith("video/")), imgs=list.filter(f=>f.type.startsWith("image/"));
@@ -722,6 +780,12 @@ function reportText(){
   for(const id of ORDER){ const r=R[id]; const st=(r.s==="check"&&state.checked.has(id))?"OK (vérifié)":lab[r.s]; L.push("",`${st} · ${INFO[id].t}`); if(r.d&&r.s!=="na") L.push("   "+r.d.replace(/\n/g,"\n   ")); if(r.s==="fix") L.push("   Comment corriger : "+INFO[id].how); }
   return L.join("\n");
 }
+async function copyText(t,okMsg){ try{ await navigator.clipboard.writeText(t); setStatus(okMsg); }catch{ setStatus("Copie impossible ici : sélectionne le texte et fais Cmd+C."); } }
+$("#btn-copycap").onclick=()=>copyText(state.caption,"Légende copiée : colle-la dans Instagram ou Facebook.");
+$("#btn-copyalt").onclick=()=>copyText(state.alts.filter(a=>a&&a.trim()).map((a,i,arr)=>arr.length>1?`Image ${i+1} : ${a.trim()}`:a.trim()).join("\n"),"Description copiée : colle-la dans « Écrire un texte alternatif ».");
+$("#btn-nosrt").onclick=()=>{ state.noSrt=true; render(); };
+$("#mbar-btn").onclick=()=>$("#h-res").scrollIntoView({behavior:"smooth",block:"start"});
+document.querySelectorAll('input[name=pf]').forEach(r=>r.addEventListener("change",()=>render()));
 $("#btn-copy").onclick=async()=>{ const t=reportText(); try{ await navigator.clipboard.writeText(t); setStatus("Rapport copié."); }catch{ setStatus("Copie impossible ici : utilise « Télécharger le rapport »."); } };
 
 /* ---------- lecture automatique des textes (OCR, gratuit, dans le navigateur) ---------- */
