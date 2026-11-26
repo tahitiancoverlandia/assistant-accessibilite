@@ -4,222 +4,289 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Assistant accessibilité réseaux sociaux</title>
-<meta name="description" content="Vérifie une publication Instagram ou Facebook point par point : texte alternatif, contrastes, légende, hashtags, emojis, liens, sous-titres et flashs. Tout se passe dans le navigateur.">
+<meta name="description" content="Vérifie une publication Instagram ou Facebook avant de la poster : ce qu'il faut corriger, ce qu'il faut vérifier. Tout se passe dans le navigateur.">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
 <style>
-/* Mise en page : barre fine, intro courte, puis 2 colonnes (saisie | verdict) sur fond clair ; une seule couleur d'accent, les couleurs d'état servent au verdict */
+/* Mise en page : à gauche « Ta publication » en 3 étapes guidées, à droite « Résultat » trié par action (à corriger, à vérifier, c'est bon). */
 :root{
-  --bg:#F6F7F9; --surface:#FFFFFF; --soft:#F1F3F6; --line:#E5E8EE; --ink:#0F1728; --muted:#5A6476; --faint:#8A93A3;
+  --bg:#F6F7F9; --surface:#FFFFFF; --soft:#F1F3F6; --line:#E5E8EE; --ink:#0F1728; --muted:#545E70; --faint:#7E8798;
   --accent:#2952E3; --accent-ink:#FFFFFF; --accent-soft:#EAF0FF;
-  --fix:#C8281E; --fix-soft:#FDECEB; --check:#A55A00; --check-soft:#FFF4E2; --ok:#0A7A4B; --ok-soft:#E7F6EE; --na:#8A93A3; --na-soft:#F1F3F6;
+  --fix:#C8281E; --fix-soft:#FDECEB; --check:#9A5300; --check-soft:#FFF4E2; --ok:#0A7A4B; --ok-soft:#E7F6EE;
   --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.06);
   --f-head:"Plus Jakarta Sans","Inter",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
   --f-body:"Inter",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
-  --r:16px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A3AEC2; --faint:#748099;
+  --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A9B3C6; --faint:#7F8AA2;
   --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547;
-  --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20; --na:#748099; --na-soft:#192133;
+  --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A3AEC2; --faint:#748099;
+  --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A9B3C6; --faint:#7F8AA2;
   --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547;
-  --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20; --na:#748099; --na-soft:#192133;
+  --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
-.in{max-width:1200px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
-.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.bar .in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-head);font-weight:700;font-size:15.5px;letter-spacing:-.01em}
+button{font:inherit}
+.in{max-width:1180px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .in{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-head);font-weight:700;font-size:15.5px}
 .mark{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
 .mark svg{width:16px;height:16px}
+.pf{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted)}
 .seg{display:inline-flex;gap:2px;background:var(--soft);border:0;border-radius:10px;padding:3px;margin:0}
 .seg label{position:relative}
 .seg input{position:absolute;opacity:0;pointer-events:none}
-.seg span{display:block;padding:6px 14px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.seg span{display:block;padding:6px 14px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer}
 .seg input:checked+span{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
 .seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
-.intro{padding-block:36px 24px}
-h1{font-family:var(--f-head);font-size:clamp(26px,3.4vw,38px);line-height:1.1;letter-spacing:-.025em;margin:0;text-wrap:balance}
-.intro p{color:var(--muted);margin:10px 0 0;max-width:60ch;font-size:15.5px}
-.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start;padding-bottom:48px}
-@media (max-width:920px){.grid{grid-template-columns:minmax(0,1fr)}}
-.col{display:grid;gap:20px;min-width:0}
-.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:22px;min-width:0}
-.card-h{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.step{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;display:grid;place-items:center;flex:none}
-h2{font-family:var(--f-head);font-size:17px;letter-spacing:-.01em;margin:0}
-.drop{border:1.5px dashed var(--line);background:var(--soft);border-radius:12px;padding:28px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.intro{padding-block:30px 22px}
+h1{font-family:var(--f-head);font-size:clamp(25px,3.2vw,36px);line-height:1.12;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.intro p{color:var(--muted);margin:8px 0 0;max-width:62ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start;padding-bottom:48px}
+@media (max-width:940px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:22px;min-width:0}
+h2{font-family:var(--f-head);font-size:19px;letter-spacing:-.01em;margin:0 0 4px}
+.card>.sub{color:var(--muted);font-size:13.5px;margin:0 0 18px}
+/* étapes */
+.step{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:16px 0;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:0;padding-top:4px}
+.num{width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--muted);font-weight:700;font-size:13.5px;display:grid;place-items:center}
+.step.done .num{background:var(--ok);color:#fff}
+.step.done .num span{display:none}
+.step .num svg{width:15px;height:15px;display:none}
+.step.done .num svg{display:block}
+.step h3{margin:4px 0 2px;font-size:15.5px;font-weight:600}
+.hint{color:var(--muted);font-size:13.5px;margin:0 0 10px}
+.hint b{color:var(--ink);font-weight:600}
+.opt{font-weight:500;color:var(--faint);font-size:13px}
+.drop{border:1.5px dashed var(--line);background:var(--soft);border-radius:12px;padding:26px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
 .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
 .drop:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .drop .ic{width:40px;height:40px;margin:0 auto 10px;border-radius:12px;background:var(--surface);display:grid;place-items:center;color:var(--accent);box-shadow:var(--shadow)}
 .drop .ic svg{width:20px;height:20px}
-.drop strong{display:block;font-weight:600;font-size:15px}
+.drop strong{display:block;font-weight:600}
 .drop p{margin:4px 0 0;color:var(--faint);font-size:13px}
-.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:14px}
-.thumbs:empty{display:none}
-.thumb{position:relative;border-radius:10px;overflow:hidden;background:var(--soft);aspect-ratio:4/5;cursor:crosshair}
-.thumb canvas,.thumb video{width:100%;height:100%;object-fit:contain;display:block}
-.thumb .n{position:absolute;left:6px;top:6px;background:rgba(15,23,40,.7);color:#fff;font-size:11px;font-weight:600;border-radius:6px;padding:1px 6px}
-.meta{font-size:12.5px;color:var(--faint);margin:8px 0 0;font-variant-numeric:tabular-nums}
-.meta:empty{display:none}
-.example{display:flex;gap:8px;align-items:flex-start;background:var(--check-soft);color:var(--check);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:500;margin-top:12px}
-.pip{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
-.pip strong{color:var(--ink);font-weight:600}
-.pip .row{display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap}
-.pip .sw{display:inline-flex;align-items:center;gap:6px}
-.pip i{display:inline-block;width:18px;height:18px;border-radius:6px;border:1px solid var(--line);background:var(--soft)}
-#pip-out{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-label.f{display:block;font-weight:600;font-size:13.5px;margin:0 0 6px}
-label.f em{font-style:normal;font-weight:400;color:var(--faint)}
-.field+.field{margin-top:16px}
-textarea,input[type=text]{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:10px 12px;resize:vertical;transition:border-color .15s,background .15s}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.linkbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.preview{position:relative;background:var(--soft);border-radius:12px;overflow:hidden;display:grid;place-items:center;max-height:440px}
+.preview canvas,.preview video{display:block;max-width:100%;max-height:440px;width:auto;height:auto}
+.preview.picking canvas{cursor:crosshair}
+.strip{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.strip button{width:52px;height:64px;border-radius:8px;border:2px solid transparent;padding:0;background:var(--soft);overflow:hidden;cursor:pointer}
+.strip button[aria-current="true"]{border-color:var(--accent)}
+.strip canvas{width:100%;height:100%;object-fit:cover;display:block}
+.mediabar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+.tool{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px}
+.tool-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tool-h strong{font-size:14px}
+.tool p{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
+.pick{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13.5px}
+.sw{display:inline-flex;align-items:center;gap:6px}
+.sw i{display:inline-block;width:20px;height:20px;border-radius:6px;border:1px solid var(--line);background:var(--soft)}
+.verdict{font-weight:700}
+.note{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--check-soft);color:var(--check);border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:500;margin-top:10px}
+.note .linkbtn{color:var(--check)}
+textarea{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:10px 12px;resize:vertical;transition:border-color .15s,background .15s}
 textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+textarea::placeholder{color:var(--faint)}
 .alts{display:grid;gap:8px}
-.alts .row{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:start}
-.alts .row b{display:grid;place-items:center;height:26px;margin-top:8px;background:var(--soft);border-radius:7px;font-size:12px;font-weight:600;color:var(--muted)}
+.alts label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px}
+details.help{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
+details.help summary{cursor:pointer;color:var(--accent);font-weight:600;list-style:none}
+details.help summary::-webkit-details-marker{display:none}
+details.help summary::before{content:"? ";display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--accent-soft);font-size:11px;margin-right:4px}
+details.help div{background:var(--soft);border-radius:10px;padding:10px 12px;margin-top:8px}
+details.help p{margin:0} details.help p+p{margin-top:6px}
 input[type=file]{font-size:13px;color:var(--muted)}
 input[type=file]::file-selector-button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 12px;margin-right:10px;cursor:pointer}
-.srt{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.status{font-size:13px;color:var(--muted);margin:12px 0 0}
+.status{font-size:13px;color:var(--muted);margin:10px 0 0}
 .status:empty{display:none}
-.score{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.score .big{font-family:var(--f-head);font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
-.score .big small{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:6px}
-.score .note{font-size:13px;color:var(--muted)}
-.meter{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--soft);margin:14px 0 16px;gap:2px}
-.meter i{display:block;height:100%}
-.meter .fix{background:var(--fix)} .meter .check{background:var(--check)} .meter .ok{background:var(--ok)} .meter .na{background:var(--line)}
-.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
-.filters button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:99px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
-.filters button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
-.filters button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.filters .d{width:7px;height:7px;border-radius:50%}
-.sec{margin-top:18px}
-.sec h3{font-size:11.5px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin:0 0 4px}
-.pt{display:grid;grid-template-columns:10px 34px minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 2px;border-bottom:1px solid var(--line)}
-.sec .pt:last-child{border-bottom:0}
-.pt::before{content:"";width:9px;height:9px;border-radius:50%;margin-top:7px;background:var(--na)}
-.pt.fix::before{background:var(--fix);box-shadow:0 0 0 3px var(--fix-soft)} .pt.check::before{background:var(--check);box-shadow:0 0 0 3px var(--check-soft)} .pt.ok::before{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
-.pt .id{font-size:12.5px;font-weight:600;color:var(--faint);padding-top:2px;font-variant-numeric:tabular-nums}
-.pt .t{font-weight:600;font-size:14.5px}
-.pt.na .t{color:var(--muted);font-weight:500}
-.pt .grp{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:10.5px;font-weight:700;border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:2px;letter-spacing:.02em}
-.pt .d{color:var(--muted);font-size:13.5px;margin-top:2px;white-space:pre-line}
-.pt.na .d{color:var(--faint)}
-.pt .s{font-size:12px;font-weight:600;border-radius:99px;padding:2px 9px;white-space:nowrap}
-.pt.ok .s{background:var(--ok-soft);color:var(--ok)} .pt.fix .s{background:var(--fix-soft);color:var(--fix)}
-.pt.check .s{background:var(--check-soft);color:var(--check)} .pt.na .s{background:var(--na-soft);color:var(--na)}
-.pt .sug{margin-top:8px;font-size:13px;background:var(--soft);border-radius:8px;padding:8px 10px}
-.pt .sug button{margin-left:6px;font:inherit;font-size:12px;font-weight:600;border:0;background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:2px 9px;cursor:pointer}
-.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-.btn{font:inherit;font-weight:600;font-size:14px;border-radius:10px;padding:10px 16px;border:1px solid transparent;cursor:pointer;transition:filter .15s}
+.btn{font-weight:600;font-size:14px;border-radius:10px;padding:10px 16px;border:1px solid transparent;cursor:pointer}
 .btn:hover{filter:brightness(1.06)}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn.primary{background:var(--accent);color:var(--accent-ink)}
 .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
-.legend{font-size:12.5px;color:var(--faint);margin:14px 0 0}
-.empty{color:var(--faint);font-size:13.5px;padding:16px 2px}
-@media (max-width:520px){.pt{grid-template-columns:10px 30px minmax(0,1fr)} .pt .s{grid-column:3;justify-self:start}.card{padding:18px}}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+/* résultat */
+.empty{text-align:center;padding:30px 10px 16px}
+.empty .big{width:56px;height:56px;border-radius:16px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin:0 auto 14px}
+.empty .big svg{width:26px;height:26px}
+.empty h3{margin:0 0 6px;font-size:17px;font-family:var(--f-head)}
+.empty p{color:var(--muted);margin:0 auto 16px;max-width:42ch;font-size:14px}
+.head{display:flex;gap:14px;align-items:center;border-radius:14px;padding:16px;margin-bottom:6px}
+.head.fix{background:var(--fix-soft)} .head.check{background:var(--check-soft)} .head.ok{background:var(--ok-soft)}
+.head .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff}
+.head.fix .ic{background:var(--fix)} .head.check .ic{background:var(--check)} .head.ok .ic{background:var(--ok)}
+.head .ic svg{width:22px;height:22px}
+.head strong{display:block;font-family:var(--f-head);font-size:18px;line-height:1.25}
+.head.fix strong{color:var(--fix)} .head.check strong{color:var(--check)} .head.ok strong{color:var(--ok)}
+.head span{font-size:13.5px;color:var(--muted)}
+.grp-h{display:flex;align-items:center;gap:8px;margin:22px 0 10px;font-size:14px;font-weight:700}
+.grp-h .c{min-width:22px;height:22px;border-radius:99px;display:inline-grid;place-items:center;font-size:12px;padding:0 7px;color:#fff}
+.grp-h.fix .c{background:var(--fix)} .grp-h.check .c{background:var(--check)} .grp-h.ok .c{background:var(--ok)}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.item.fix{border-left:4px solid var(--fix)}
+.item .t{font-weight:600}
+.item .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:2px}
+.item .why{color:var(--ink);font-size:13.5px;margin-top:4px;white-space:pre-line}
+.item .how{background:var(--soft);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13.5px;color:var(--muted)}
+.item .how b{color:var(--ink);font-weight:600}
+.item .sug{margin-top:8px;font-size:13.5px;background:var(--accent-soft);border-radius:8px;padding:8px 10px}
+.item .sug button{margin-left:6px}
+.chk{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.chk input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--ok)}
+.chk .q{color:var(--muted);font-size:13.5px;margin-top:2px;white-space:pre-line}
+details.okl summary{cursor:pointer;list-style:none}
+details.okl summary::-webkit-details-marker{display:none}
+details.okl summary .more{font-weight:500;color:var(--accent);font-size:13px;margin-left:4px}
+.okrow{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;padding:6px 0;font-size:14px;border-bottom:1px solid var(--line)}
+.okrow:last-child{border-bottom:0}
+.okrow svg{width:16px;height:16px;color:var(--ok);margin-top:3px}
+.okrow small{display:block;color:var(--faint);font-size:12.5px}
+.na{color:var(--faint);font-size:13px;margin-top:14px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.foot{color:var(--faint);font-size:12.5px;margin:12px 0 0}
+@media (max-width:520px){.card{padding:18px}.step{grid-template-columns:26px minmax(0,1fr)}.num{width:26px;height:26px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+
 <header class="bar"><div class="in">
-  <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Assistant accessibilité</div>
-  <fieldset class="seg platform" aria-label="Réseau social">
+  <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Assistant accessibilité</div>
+  <div class="pf"><span id="pf-l">Je publie sur</span>
+  <fieldset class="seg" aria-labelledby="pf-l">
     <label><input type="radio" name="pf" id="pf-ig" value="instagram" checked><span>Instagram</span></label>
     <label><input type="radio" name="pf" id="pf-fb" value="facebook"><span>Facebook</span></label>
-  </fieldset>
+  </fieldset></div>
 </div></header>
 
 <main class="in">
   <section class="intro">
-    <h1>Vérifie ta publication avant de la poster.</h1>
-    <p>Dépose un visuel, un carrousel ou une vidéo, ajoute la légende et les textes alternatifs : chaque point de la fiche de contrôle est vérifié. Rien n'est envoyé, tout reste dans ton navigateur.</p>
+    <h1>Ta publication est-elle accessible à tous&nbsp;?</h1>
+    <p>Ajoute ton visuel et ta légende : l'outil te dit ce qu'il faut corriger avant de publier, en suivant la fiche de contrôle. Rien n'est envoyé, tout reste dans ton navigateur.</p>
   </section>
 
   <div class="grid">
-    <div class="col">
-      <section class="card" aria-labelledby="h-depot">
-        <div class="card-h"><span class="step">1</span><h2 id="h-depot">Création</h2></div>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="drop-help">
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
-          <strong>Glisse tes fichiers ici</strong>
-          <p id="drop-help">ou clique pour choisir · JPG, PNG, WebP, MP4, MOV · plusieurs images = carrousel</p>
+    <section class="card" aria-labelledby="h-pub">
+      <h2 id="h-pub">Ta publication</h2>
+      <p class="sub">Remplis les 3 étapes. Le résultat se met à jour tout seul.</p>
+
+      <div class="step" id="st1">
+        <div class="num"><span>1</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div style="min-width:0">
+          <h3>Ajoute ton visuel</h3>
+          <p class="hint">Une image, plusieurs images pour un carrousel, ou une vidéo.</p>
+          <div id="drop-wrap">
+            <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="drop-help">
+              <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
+              <strong>Glisse ton fichier ici ou clique pour le choisir</strong>
+              <p id="drop-help">JPG, PNG, WebP, MP4 ou MOV</p>
+            </div>
+            <p class="hint" style="margin:10px 0 0">Pas de fichier sous la main&nbsp;? <button class="linkbtn" type="button" id="btn-ex1">Essayer avec un exemple</button></p>
+          </div>
           <input type="file" id="file" accept="image/*,video/*" multiple hidden>
+          <div id="media" hidden>
+            <div class="preview" id="preview"></div>
+            <div class="strip" id="strip"></div>
+            <div class="mediabar"><span id="meta"></span><button class="btn ghost small" id="btn-change" type="button">Changer de fichier</button></div>
+            <div class="note" id="ex-note" hidden><span>Exemple : un faux visuel avec des erreurs volontaires.</span><button class="linkbtn" type="button" id="btn-clear">Effacer l'exemple</button></div>
+            <div class="tool" id="pip-box">
+              <div class="tool-h"><strong>Mesurer un contraste</strong><button class="btn ghost small" id="btn-pick" type="button">Commencer</button></div>
+              <p id="pip-help">Vérifie qu'un texte se lit bien sur son fond&nbsp;: clique sur « Commencer », puis sur une lettre, puis sur le fond juste à côté.</p>
+              <div class="pick" id="pip-res" hidden><span class="sw"><i id="sw-fg"></i>Texte</span><span class="sw"><i id="sw-bg"></i>Fond</span><span class="verdict" id="pip-out"></span></div>
+            </div>
+          </div>
+          <p class="status" id="status" role="status"></p>
         </div>
-        <div class="thumbs" id="thumbs" aria-live="polite"></div>
-        <p class="meta" id="meta"></p>
-        <div class="example" id="example-note">Exemple chargé : un faux visuel avec des erreurs. Glisse ta création pour le remplacer.</div>
-        <div class="pip" id="pip">
-          <strong>Pipette contraste</strong> · clique sur le texte, puis sur le fond, dans une vignette.
-          <div class="row"><span class="sw"><i id="sw-fg"></i>Texte</span><span class="sw"><i id="sw-bg"></i>Fond</span><span id="pip-out"></span></div>
-        </div>
-      </section>
-
-      <section class="card" aria-labelledby="h-textes">
-        <div class="card-h"><span class="step">2</span><h2 id="h-textes">Textes</h2></div>
-        <div class="field">
-          <label class="f" for="caption">Légende du post</label>
-          <textarea id="caption" rows="6"></textarea>
-        </div>
-        <div class="field" id="alts-wrap">
-          <label class="f" id="alts-label">Texte alternatif <em>· un par image</em></label>
-          <div class="alts" id="alts" aria-labelledby="alts-label"></div>
-        </div>
-        <div class="field" id="srt-wrap" hidden>
-          <label class="f" for="srt">Sous-titres <em>· fichier .srt de la vidéo</em></label>
-          <div class="srt"><input type="file" id="srt" accept=".srt,.vtt,text/plain"><span id="srt-name" class="meta"></span></div>
-        </div>
-        <p class="status" id="status" role="status"></p>
-      </section>
-    </div>
-
-    <section class="card results" aria-labelledby="h-res">
-      <div class="card-h"><span class="step">3</span><h2 id="h-res">Verdict</h2></div>
-      <div class="score" id="score" aria-live="polite"></div>
-      <div class="meter" id="meter" aria-hidden="true"></div>
-      <div class="filters" id="filters" role="group" aria-label="Filtrer les points"></div>
-      <div id="results"></div>
-      <div class="actions">
-        <button class="btn primary" id="btn-copy" type="button">Copier le rapport</button>
-        <button class="btn ghost" id="btn-dl" type="button" hidden>Télécharger</button>
       </div>
-      <p class="legend">Contrôles automatiques : légende, hashtags, emojis, liens, textes alternatifs, sous-titres (.srt), flashs des vidéos et contraste à la pipette. « À vérifier » : à contrôler à l'œil.</p>
+
+      <div class="step" id="st2">
+        <div class="num"><span>2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div style="min-width:0">
+          <h3><label for="caption">Colle ta légende</label></h3>
+          <p class="hint">Le texte exact que tu vas publier sous le visuel, avec les hashtags.</p>
+          <textarea id="caption" rows="5" placeholder="Ex. Jackpot de 2,8 milliards de francs ce samedi. Jouer comporte des risques."></textarea>
+        </div>
+      </div>
+
+      <div class="step" id="st3">
+        <div class="num"><span>3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div style="min-width:0">
+          <div id="alt-zone">
+            <h3>Décris ton image <span class="opt">(texte alternatif)</span></h3>
+            <details class="help"><summary>C'est quoi&nbsp;?</summary><div>
+              <p>Une ou deux phrases qui disent ce que montre l'image. Elles sont invisibles sur le post, mais lues à voix haute aux personnes aveugles ou malvoyantes.</p>
+              <p><b>Où l'écrire&nbsp;:</b> Instagram&nbsp;: Paramètres avancés &gt; Écrire un texte alternatif. Facebook&nbsp;: Modifier la photo &gt; Texte alternatif.</p>
+              <p><b>Exemple&nbsp;:</b> « Visuel Loto : jackpot de 2,8 milliards de francs, tirage samedi, boules de loto sur fond bleu. »</p>
+            </div></details>
+            <div class="alts" id="alts"><p class="hint" style="margin:0">Ajoute d'abord ton visuel (étape 1).</p></div>
+          </div>
+          <div id="srt-zone" hidden>
+            <h3>Ajoute les sous-titres <span class="opt">(fichier .srt, si tu l'as)</span></h3>
+            <p class="hint">Le fichier texte des sous-titres de ta vidéo. Il permet de vérifier leur rythme et leur longueur.</p>
+            <input type="file" id="srt" accept=".srt,.vtt,text/plain" aria-label="Fichier de sous-titres"> <span id="srt-name" class="hint"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-res">
+      <h2 id="h-res">Résultat</h2>
+      <p class="sub">Ce qu'il faut corriger avant de publier, puis ce que tu dois vérifier toi-même.</p>
+      <div id="res-empty" class="empty">
+        <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></div>
+        <h3>Le résultat s'affiche ici</h3>
+        <p>Ajoute ton visuel et ta légende à gauche&nbsp;: chaque règle de la fiche de contrôle est vérifiée au fur et à mesure.</p>
+        <button class="btn primary" type="button" id="btn-ex2">Voir un exemple</button>
+      </div>
+      <div id="res" aria-live="polite" hidden></div>
+      <div class="actions" id="res-actions" hidden>
+        <button class="btn ghost" id="btn-copy" type="button">Copier le rapport</button>
+        <button class="btn ghost" id="btn-dl" type="button" hidden>Télécharger le rapport</button>
+      </div>
+      <p class="foot">Les règles viennent de la fiche de contrôle accessibilité (RGAA et WCAG adaptés aux réseaux sociaux).</p>
     </section>
   </div>
 </main>
-
 <script>
 (() => {
+
 "use strict";
 const $ = (s) => document.querySelector(s);
-const POINTS = [
-  {sec:"Visuels et carrousels", items:[
-    ["1.1","Texte alternatif sur chaque image",true],["1.2","Image décorative signalée",true],["1.3","Infos clés aussi dans la légende",true],
-    ["1.4","Carrousel : un texte alternatif par slide",false],["1.5","Contraste texte / fond d'au moins 4,5:1",true],
-    ["1.6","Pas de sens porté par la couleur seule",false],["1.7","Lisible sur téléphone",false]]},
-  {sec:"Vidéos, Reels et Stories", items:[
-    ["2.1","Sous-titres complets, relus et synchronisés",false],["2.2","Description de ce qui est montré, dans la légende",false],
-    ["2.3","Pas de flash plus de 3 fois par seconde",false],["2.4","Texte à l'écran affiché assez longtemps",false],["2.5","Fichier des sous-titres conservé",false]]},
-  {sec:"Légende, structure, hashtags et liens", items:[
-    ["3.1","Phrases courtes, information principale en premier",false],["3.2","Texte structuré : des repères clairs",true],
-    ["3.3","Hashtags avec une majuscule à chaque mot",false],["3.4","Emojis rares, jamais répétés",false],["3.5","Liens explicites",true]]},
-  {sec:"Charte jeu responsable (en plus)", items:[
-    ["P1","Pictogramme -18 visible sur le visuel",false],["P2","Message de mise en garde présent",false]]}
-];
-const LABEL = {ok:"Conforme",fix:"À corriger",check:"À vérifier",na:"Sans objet"};
-
-const state = { filter:"all", media:[], kind:null, example:true, caption:"", alts:[], platform:"instagram", srt:null, srtName:"",
-  ai:null, elements:null, elementsSource:null, flash:null, flashBusy:false, pick:[], videoInfo:null };
-
+const ORDER=["1.1","1.2","1.3","1.4","1.5","1.6","1.7","2.1","2.2","2.3","2.4","2.5","3.1","3.2","3.3","3.4","3.5","P1","P2"];
+const INFO={
+ "1.1":{t:"Description de l'image (texte alternatif)",g:1,how:"Écris 1 à 2 phrases qui disent ce que montre l'image : le message, les chiffres et les dates. Instagram : Paramètres avancés > Écrire un texte alternatif. Facebook : Modifier la photo > Texte alternatif."},
+ "1.2":{t:"Image purement décorative",g:1,how:"Sur les réseaux sociaux, écris quand même une description."},
+ "1.3":{t:"Infos importantes aussi dans la légende",g:1,how:"Recopie dans la légende les gains, les dates, les conditions et la phrase de prévention (ex. « Jouer comporte des risques »). Le texte écrit dans l'image n'est pas lu aux personnes aveugles."},
+ "1.4":{t:"Une description pour chaque image du carrousel",g:0,how:"Ajoute une description à chaque image, pas seulement à la première."},
+ "1.5":{t:"Texte bien lisible sur son fond (contraste)",g:1,how:"Fonce le texte ou éclaircis le fond jusqu'à un contraste de 4,5:1 au moins. Vérifie avec « Mesurer un contraste », sous l'aperçu."},
+ "1.6":{t:"Pas d'info donnée seulement par la couleur",g:0,how:"Ajoute un mot ou un symbole à côté de la couleur (ex. ✓ Gagné, ✕ Perdu)."},
+ "1.7":{t:"Texte assez grand pour un téléphone",g:0,how:"Agrandis les petites mentions : environ 30 px minimum sur un visuel de 1080 px de large."},
+ "2.1":{t:"Sous-titres présents et corrects",g:0,how:"Ajoute des sous-titres et relis les noms, les chiffres et les sigles. Chaque sous-titre : au moins 1 seconde à l'écran, 2 lignes maximum."},
+ "2.2":{t:"La légende décrit la vidéo",g:0,how:"Ajoute une phrase qui dit ce qu'on voit (ex. « Dans la vidéo : les boules défilent, puis le jackpot apparaît »)."},
+ "2.3":{t:"Pas de clignotements rapides",g:0,how:"Ralentis ou adoucis l'effet : 3 flashs par seconde au maximum (risque pour les personnes épileptiques)."},
+ "2.4":{t:"Texte affiché assez longtemps",g:0,how:"Compte environ 3 mots par seconde, un peu plus pour les chiffres."},
+ "2.5":{t:"Fichier de sous-titres gardé",g:0,how:"Exporte un fichier .srt avec la vidéo et range-le avec la campagne."},
+ "3.1":{t:"Message principal dès la première phrase",g:0,how:"Mets l'essentiel au début, en une phrase courte. Instagram coupe la légende vers 125 caractères."},
+ "3.2":{t:"Légende découpée et lisible",g:1,how:"Passe à la ligne entre les idées, mets des tirets pour les listes, et n'utilise pas de police « fantaisie » copiée d'un site."},
+ "3.3":{t:"Hashtags avec une majuscule à chaque mot",g:0,how:"Écris #PlaisirDOffrir plutôt que #plaisirdoffrir : le lecteur d'écran lit alors les mots séparément."},
+ "3.4":{t:"Peu d'emojis, jamais répétés",g:0,how:"Garde 1 à 3 emojis, jamais le même plusieurs fois : chacun est lu à voix haute."},
+ "3.5":{t:"Liens clairs",g:1,how:"Dis où mène le lien (« Résultats sur notre site ») au lieu de « cliquez ici ». Sur Instagram, renvoie au lien en bio."},
+ "P1":{t:"Pictogramme -18 visible",g:0,how:"Ajoute le pictogramme -18 sur le visuel."},
+ "P2":{t:"Message de prévention visible",g:0,how:"Ajoute le message de mise en garde sur le visuel."}
+};
+const state = { media:[], kind:null, example:false, caption:"", alts:[], platform:"instagram", srt:null, srtName:"",
+  ai:null, elements:null, elementsSource:null, flash:null, flashBusy:false, pick:[], videoInfo:null, sel:0, pickMode:0, checked:new Set(), lastR:null };
 /* ---------- couleurs ---------- */
 const lin = (v) => { v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); };
 const lum = (c) => 0.2126*lin(c[0])+0.7152*lin(c[1])+0.0722*lin(c[2]);
@@ -386,9 +453,9 @@ function evaluate(){
     const src=state.elementsSource==="exemple"?" (mesuré sur l'exemple)":" (mesuré sur les pixels)";
     if(fails.length) set("1.5","fix",fails.map(e=>`« ${e.texte} » : ${fr(e.m.ratio)}:1, minimum ${e.big?"3":"4,5"}:1${e.img!=null&&n>1?` (image ${e.img+1})`:""}`).join("\n")+src);
     else if(worst) set("1.5","ok",`Plus faible contraste : « ${worst.texte} » à ${fr(worst.m.ratio)}:1${src}.`);
-    else set("1.5","check","Aucun texte mesurable : utilise la pipette.");
-  } else if(state.pick.length===2){ const r=ratio(state.pick[0],state.pick[1]); set("1.5",r>=4.5?"ok":r>=3?"check":"fix",`Pipette : ${fr(r)}:1 ${r>=4.5?"(conforme)":r>=3?"(suffit seulement pour un très gros texte)":"(insuffisant)"}.`); }
-  else set("1.5","check","Mesure chaque texte important à la pipette : clique sur le texte, puis sur le fond.");
+    else set("1.5","check","Aucun texte mesurable : utilise « Mesurer un contraste », sous l'aperçu.");
+  } else if(state.pick.length===2){ const r=ratio(state.pick[0],state.pick[1]); set("1.5",r>=4.5?"ok":r>=3?"check":"fix",`Mesure : ${fr(r)}:1 ${r>=4.5?"(conforme)":r>=3?"(suffit seulement pour un très gros texte)":"(insuffisant)"}.`); }
+  else set("1.5","check","Mesure les textes importants avec « Mesurer un contraste », sous l'aperçu.");
   // 1.6
   if(!n) set("1.6","na","Ajoute une création.");
   else if(ai?.couleur_seule) set("1.6",ai.couleur_seule.probleme?"fix":"ok",ai.couleur_seule.remarque||(ai.couleur_seule.probleme?"Une information ne passe que par la couleur.":"Aucune information portée par la couleur seule."));
@@ -456,133 +523,175 @@ function evaluate(){
   return R;
 }
 
-/* ---------- rendu ---------- */
-function render(){
-  const R=evaluate(); const counts={ok:0,fix:0,check:0,na:0};
-  const res=$("#results"); res.replaceChildren();
-  for(const sec of POINTS){
-    const s=document.createElement("section"); s.className="sec"; const h=document.createElement("h3"); h.textContent=sec.sec; s.append(h);
-    for(const [id,title,grp] of sec.items){
-      const r=R[id]; counts[r.s]++;
-      const row=document.createElement("div"); row.className="pt "+r.s;
-      const i=document.createElement("div"); i.className="id"; i.textContent=id;
-      const body=document.createElement("div"); body.style.minWidth="0";
-      const t=document.createElement("div"); t.className="t"; t.textContent=title;
-      if(grp){ const g=document.createElement("span"); g.className="grp"; g.textContent="Prioritaire"; t.append(g); }
-      const d=document.createElement("div"); d.className="d"; d.textContent=r.d||"";
-      body.append(t,d);
-      for(const sg of (r.sug||[])){
-        const box=document.createElement("div"); box.className="sug"; const b=document.createElement("strong"); b.textContent=sg.label+" : ";
-        const tx=document.createElement("span"); tx.textContent=sg.text; const btn=document.createElement("button"); btn.type="button"; btn.textContent="Utiliser";
-        btn.onclick=()=>{ const inp=document.getElementById("alt-"+sg.target); if(inp){ inp.value=sg.text; state.alts[sg.target]=sg.text; render(); } };
-        box.append(b,tx,btn); body.append(box);
-      }
-      const st=document.createElement("span"); st.className="s"; st.textContent=LABEL[r.s];
-      row.append(i,body,st); s.append(row);
-    }
-    res.append(s);
-  }
-  const total=counts.fix+counts.check+counts.ok+counts.na, applicable=counts.fix+counts.check+counts.ok;
-  const sc=$("#score"); sc.replaceChildren();
-  const big=document.createElement("div"); big.className="big";
-  if(counts.fix){ big.textContent=String(counts.fix); const sm=document.createElement("small"); sm.textContent=counts.fix>1?"points à corriger":"point à corriger"; big.append(sm); big.style.color="var(--fix)"; }
-  else if(counts.check){ big.textContent=String(counts.check); const sm=document.createElement("small"); sm.textContent=counts.check>1?"points à vérifier":"point à vérifier"; big.append(sm); big.style.color="var(--check)"; }
-  else { big.textContent="Tout est bon"; big.style.color="var(--ok)"; }
-  const note=document.createElement("div"); note.className="note"; note.textContent=`${counts.ok} conforme${counts.ok>1?"s":""} sur ${applicable} point${applicable>1?"s":""} applicable${applicable>1?"s":""}`;
-  sc.append(big,note);
-  const me=$("#meter"); me.replaceChildren();
-  for(const k of ["fix","check","ok","na"]) if(counts[k]){ const b=document.createElement("i"); b.className=k; b.style.flex=String(counts[k]); me.append(b); }
-  const fl=$("#filters"); fl.replaceChildren();
-  for(const [k,lab] of [["all","Tous"],["fix","À corriger"],["check","À vérifier"],["ok","Conformes"]]){
-    const b=document.createElement("button"); b.type="button"; b.setAttribute("aria-pressed",String(state.filter===k));
-    if(k!=="all"){ const d=document.createElement("span"); d.className="d"; d.style.background=`var(--${k})`; b.append(d); }
-    b.append(document.createTextNode(`${lab} ${k==="all"?total:counts[k]}`));
-    b.onclick=()=>{ state.filter=k; render(); }; fl.append(b);
-  }
-  let shown=0;
-  res.querySelectorAll(".sec").forEach(sec=>{ let vis=0; sec.querySelectorAll(".pt").forEach(p=>{ const ok=state.filter==="all"||p.classList.contains(state.filter); p.hidden=!ok; if(ok) vis++; }); sec.hidden=!vis; shown+=vis; });
-  if(!shown){ const e=document.createElement("p"); e.className="empty"; e.textContent="Aucun point dans cette catégorie."; res.append(e); }
-  state.lastR=R;
-}
-function setStatus(t){ $("#status").textContent=t; }
 
 /* ---------- interface ---------- */
-function renderThumbs(){
-  const th=$("#thumbs"); th.replaceChildren();
-  state.media.forEach((m,i)=>{
-    const d=document.createElement("div"); d.className="thumb"; d.title="Clique pour la pipette";
-    const n=document.createElement("span"); n.className="n"; n.textContent=state.kind==="video"?"Vidéo":String(i+1);
-    if(m.type==="image"){ const c=m.canvas; c.setAttribute("aria-label",`Image ${i+1}`); d.append(c); d.onclick=(e)=>pipette(e,m,c); }
-    else { const v=m.el; v.controls=true; d.append(v); d.style.aspectRatio=`${m.w}/${m.h}`; d.style.cursor="default"; }
-    d.append(n); th.append(d);
-  });
-  const meta=$("#meta");
-  if(state.kind==="video"){ const m=state.media[0]; meta.textContent=`${m.w} × ${m.h} px · ${fr(m.dur)} s${Math.abs(m.w/m.h-9/16)<0.03?" · format 9:16, bon pour un Reel":""}`; }
-  else if(state.kind==="image") meta.textContent=state.media.map((m,i)=>`${state.media.length>1?"Image "+(i+1)+" : ":""}${m.w} × ${m.h} px`).join(" · ");
-  else meta.textContent="";
-  $("#example-note").hidden=!state.example;
-  $("#srt-wrap").hidden=state.kind!=="video";
-  $("#alts-wrap").hidden=state.kind!=="image";
+function setStatus(t){ $("#status").textContent=t; }
+const el=(tag,cls,txt)=>{ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; };
+const svg=(path)=>{ const s=document.createElementNS("http://www.w3.org/2000/svg","svg"); s.setAttribute("viewBox","0 0 24 24"); s.setAttribute("fill","none"); s.setAttribute("stroke","currentColor"); s.setAttribute("stroke-width","2.4"); s.setAttribute("stroke-linecap","round"); s.setAttribute("stroke-linejoin","round"); s.setAttribute("aria-hidden","true"); const p=document.createElementNS("http://www.w3.org/2000/svg","path"); p.setAttribute("d",path); s.append(p); return s; };
+const P_OK="M5 12.5l4.5 4.5L19 7.5", P_X="M7 7l10 10M17 7L7 17", P_EYE="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z";
+
+function renderMedia(){
+  const has=state.media.length>0;
+  $("#drop-wrap").hidden=has; $("#media").hidden=!has;
+  $("#alt-zone").hidden=state.kind==="video"; $("#srt-zone").hidden=state.kind!=="video";
+  $("#ex-note").hidden=!state.example;
+  const pv=$("#preview"); pv.replaceChildren(); const strip=$("#strip"); strip.replaceChildren();
+  if(has){
+    const m=state.media[Math.min(state.sel,state.media.length-1)];
+    if(m.type==="image"){ m.canvas.setAttribute("role","img"); m.canvas.setAttribute("aria-label",state.media.length>1?`Aperçu de l'image ${state.sel+1}`:"Aperçu du visuel"); pv.append(m.canvas); }
+    else { m.el.controls=true; pv.append(m.el); }
+    if(state.media.length>1) state.media.forEach((mm,i)=>{
+      const b=el("button"); b.type="button"; b.setAttribute("aria-label",`Voir l'image ${i+1}`); b.setAttribute("aria-current",String(i===state.sel));
+      const c=document.createElement("canvas"); c.width=104; c.height=128; const g=c.getContext("2d"); const r=Math.max(104/mm.canvas.width,128/mm.canvas.height);
+      g.drawImage(mm.canvas,(104-mm.canvas.width*r)/2,(128-mm.canvas.height*r)/2,mm.canvas.width*r,mm.canvas.height*r); b.append(c);
+      b.onclick=()=>{ state.sel=i; state.pickMode=0; renderMedia(); renderPick(); }; strip.append(b);
+    });
+    $("#meta").textContent = state.kind==="video" ? `Vidéo · ${m.w} × ${m.h} px · ${fr(m.dur)} s${Math.abs(m.w/m.h-9/16)<0.03?" · format Reel":""}` :
+      (state.media.length>1?`Carrousel de ${state.media.length} images · `:"")+`${m.w} × ${m.h} px`;
+  }
+  $("#pip-box").hidden = state.kind!=="image";
+  // descriptions
   const alts=$("#alts"); alts.replaceChildren();
   if(state.kind==="image") state.media.forEach((_,i)=>{
-    const row=document.createElement("div"); row.className="row"; const b=document.createElement("b"); b.textContent=String(i+1); b.setAttribute("aria-hidden","true");
-    const inp=document.createElement("textarea"); inp.rows=2; inp.id="alt-"+i; inp.value=state.alts[i]||""; inp.setAttribute("aria-label",`Texte alternatif de l'image ${i+1}`);
-    inp.oninput=()=>{ state.alts[i]=inp.value; render(); };
-    row.append(b,inp); alts.append(row);
+    const w=el("div"); const lab=el("label",null,state.media.length>1?`Image ${i+1}`:"Description"); lab.htmlFor="alt-"+i;
+    const ta=document.createElement("textarea"); ta.id="alt-"+i; ta.rows=2; ta.value=state.alts[i]||""; ta.placeholder="Ex. Visuel Loto : jackpot de 2,8 milliards de francs, tirage samedi.";
+    ta.oninput=()=>{ state.alts[i]=ta.value; render(); }; w.append(lab,ta); alts.append(w);
   });
+  else if(!has) alts.append(el("p","hint","Ajoute d'abord ton visuel (étape 1)."));
 }
-function pipette(e,m,c){
-  const r=c.getBoundingClientRect(); // object-fit contain
-  const s=Math.min(r.width/c.width,r.height/c.height); const ox=(r.width-c.width*s)/2, oy=(r.height-c.height*s)/2;
-  const x=Math.floor((e.clientX-r.left-ox)/s), y=Math.floor((e.clientY-r.top-oy)/s); if(x<0||y<0||x>=c.width||y>=c.height) return;
-  const g=c.getContext("2d",{willReadFrequently:true}); const d=g.getImageData(Math.max(0,x-1),Math.max(0,y-1),3,3).data; const col=[0,1,2].map(k=>{let s=0;for(let j=0;j<9;j++)s+=d[j*4+k];return s/9;});
-  if(state.pick.length>=2) state.pick=[]; state.pick.push(col);
+function renderPick(){
+  const pv=$("#preview"); pv.classList.toggle("picking",state.pickMode>0);
+  const btn=$("#btn-pick"), help=$("#pip-help"), res=$("#pip-res");
+  if(state.pickMode===1){ btn.textContent="Annuler"; help.textContent="Clique sur une lettre du texte à vérifier, dans l'aperçu."; }
+  else if(state.pickMode===2){ btn.textContent="Annuler"; help.textContent="Maintenant, clique sur le fond, juste à côté du texte."; }
+  else { btn.textContent=state.pick.length===2?"Mesurer un autre texte":"Commencer"; help.textContent=state.pick.length===2?"":"Vérifie qu'un texte se lit bien sur son fond : clique sur « Commencer », puis sur une lettre, puis sur le fond juste à côté."; }
+  help.hidden=!help.textContent;
+  res.hidden=state.pick.length===0;
   $("#sw-fg").style.background=state.pick[0]?hex(state.pick[0]):""; $("#sw-bg").style.background=state.pick[1]?hex(state.pick[1]):"";
-  $("#pip-out").textContent=state.pick.length===2?`${fr(ratio(state.pick[0],state.pick[1]))}:1`:"Clique maintenant sur le fond";
-  render();
+  const out=$("#pip-out");
+  if(state.pick.length===2){ const r=ratio(state.pick[0],state.pick[1]);
+    out.textContent = r>=4.5 ? `${fr(r)}:1 · Bien lisible` : r>=3 ? `${fr(r)}:1 · Lisible seulement en très gros texte` : `${fr(r)}:1 · Trop faible : fonce le texte ou éclaircis le fond`;
+    out.style.color = r>=4.5?"var(--ok)":r>=3?"var(--check)":"var(--fix)"; }
+  else out.textContent="";
 }
+$("#btn-pick").onclick=()=>{ if(state.pickMode){ state.pickMode=0; } else { state.pick=[]; state.pickMode=1; } renderPick(); render(); };
+$("#preview").addEventListener("click",(e)=>{
+  if(!state.pickMode) return; const c=e.target.closest("canvas"); if(!c) return;
+  const r=c.getBoundingClientRect(); const x=Math.floor((e.clientX-r.left)*c.width/r.width), y=Math.floor((e.clientY-r.top)*c.height/r.height);
+  const d=c.getContext("2d",{willReadFrequently:true}).getImageData(Math.max(0,x-1),Math.max(0,y-1),3,3).data;
+  const col=[0,1,2].map(k=>{let s=0,n=0;for(let j=0;j<d.length;j+=4){s+=d[j+k];n++;}return s/n;});
+  if(state.pickMode===1){ state.pick=[col]; state.pickMode=2; } else { state.pick=[state.pick[0],col]; state.pickMode=0; }
+  renderPick(); render();
+});
+
+function steps(){
+  $("#st1").classList.toggle("done",state.media.length>0);
+  $("#st2").classList.toggle("done",state.caption.trim().length>0);
+  const s3 = state.kind==="image" ? state.media.every((_,i)=>(state.alts[i]||"").trim().length>=20) : state.kind==="video" ? !!state.srt : false;
+  $("#st3").classList.toggle("done",s3);
+}
+
+function render(){
+  steps();
+  const R=evaluate(); state.lastR=R;
+  const started=state.media.length>0||state.caption.trim().length>0;
+  $("#res-empty").hidden=started; $("#res").hidden=!started; $("#res-actions").hidden=!started;
+  if(!started) return;
+  const fix=[],check=[],ok=[],na=[];
+  for(const id of ORDER){ const r=R[id]; if(r.s==="fix") fix.push(id); else if(r.s==="check") (state.checked.has(id)?ok:check).push(id); else if(r.s==="ok") ok.push(id); else na.push(id); }
+  const res=$("#res"); res.replaceChildren();
+  // bandeau
+  const head=el("div","head "+(fix.length?"fix":check.length?"check":"ok"));
+  const ic=el("div","ic"); ic.append(svg(fix.length?P_X:check.length?P_EYE:P_OK));
+  const tx=el("div");
+  if(fix.length){ tx.append(el("strong",null,`${fix.length} ${fix.length>1?"choses":"chose"} à corriger avant de publier`)); tx.append(el("span",null,check.length?`Puis ${check.length} point${check.length>1?"s":""} à vérifier toi-même.`:"Le reste est bon.")); }
+  else if(check.length){ tx.append(el("strong",null,`Presque prêt : ${check.length} point${check.length>1?"s":""} à vérifier toi-même`)); tx.append(el("span",null,"Coche chaque point une fois vérifié.")); }
+  else { tx.append(el("strong",null,"Prêt à publier")); tx.append(el("span",null,`Les ${ok.length} règles qui concernent ce post sont respectées.`)); }
+  head.append(ic,tx); res.append(head);
+  const tagTxt=window.__TAG__||"Essentiel";
+  const title=(id)=>{ const t=el("div","t",INFO[id].t); if(INFO[id].g){ t.append(el("span","tag",tagTxt)); } return t; };
+  if(fix.length){
+    const h=el("div","grp-h fix"); h.append(el("span","c",String(fix.length)),document.createTextNode("À corriger")); res.append(h);
+    for(const id of fix){ const r=R[id]; const it=el("div","item fix"); it.append(title(id)); if(r.d) it.append(el("div","why",r.d));
+      const how=el("div","how"); how.append(el("b",null,"Comment corriger : "),document.createTextNode(INFO[id].how)); it.append(how);
+      for(const sg of (r.sug||[])){ const box=el("div","sug"); box.append(el("b",null,sg.label+" : "),document.createTextNode(sg.text)); const b=el("button","btn primary small","Utiliser"); b.type="button";
+        b.onclick=()=>{ state.alts[sg.target]=sg.text; const ta=document.getElementById("alt-"+sg.target); if(ta) ta.value=sg.text; render(); }; box.append(b); it.append(box); }
+      res.append(it); }
+  }
+  if(check.length){
+    const h=el("div","grp-h check"); h.append(el("span","c",String(check.length)),document.createTextNode("À vérifier toi-même")); res.append(h);
+    for(const id of check){ const r=R[id]; const lab=el("label","chk"); const cb=document.createElement("input"); cb.type="checkbox";
+      cb.onchange=()=>{ state.checked.add(id); render(); };
+      const b=el("div"); b.append(title(id)); b.append(el("div","q",r.d||INFO[id].how)); lab.append(cb,b); res.append(lab); }
+  }
+  if(ok.length){
+    const d=document.createElement("details"); d.className="okl"; const s=document.createElement("summary");
+    const h=el("div","grp-h ok"); h.style.margin="22px 0 6px"; h.append(el("span","c",String(ok.length)),document.createTextNode("C'est bon"),el("span","more","voir le détail")); s.append(h); d.append(s);
+    for(const id of ok){ const r=R[id]; const row=el("div","okrow"); row.append(svg(P_OK)); const b=el("div",null,INFO[id].t);
+      b.append(el("small",null,state.checked.has(id)&&r.s==="check"?"Vérifié par toi.":(r.d||""))); if(state.checked.has(id)&&r.s==="check"){ const u=el("button","linkbtn","Décocher"); u.type="button"; u.style.fontSize="12.5px"; u.onclick=(e)=>{e.preventDefault(); state.checked.delete(id); render();}; b.append(u); }
+      row.append(b); d.append(row); }
+    res.append(d);
+  }
+  if(na.length) res.append(el("p","na",`${na.length} règle${na.length>1?"s ne concernent":" ne concerne"} pas ce post (par exemple les règles sur les vidéos pour une image).`));
+}
+
+/* ---------- fichiers ---------- */
+function resetChecks(){ state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.pickMode=0; state.checked=new Set(); state.sel=0; state.srt=null; state.srtName=""; $("#srt-name").textContent=""; $("#srt").value=""; }
 async function handleFiles(files){
   const list=[...files]; if(!list.length) return;
   const vids=list.filter(f=>f.type.startsWith("video/")), imgs=list.filter(f=>f.type.startsWith("image/"));
+  if(!vids.length&&!imgs.length){ setStatus("Ce format n'est pas reconnu : choisis une image (JPG, PNG, WebP) ou une vidéo (MP4, MOV)."); return; }
   setStatus("Chargement…");
   try{
-    state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.example=false; state.srt=null; state.srtName=""; $("#srt-name").textContent="";
+    resetChecks();
+    if(state.example){ state.example=false; state.caption=""; $("#caption").value=""; }
     if(vids.length){ const m=await loadVideo(vids[0]); state.media=[m]; state.kind="video"; state.videoInfo={dur:m.dur}; state.alts=[]; }
-    else if(imgs.length){ state.media=await Promise.all(imgs.slice(0,10).map(loadImage)); state.kind="image"; state.alts=state.media.map(()=> ""); }
-    else { setStatus("Format non reconnu : dépose une image (JPG, PNG, WebP) ou une vidéo (MP4, MOV)."); return; }
-    renderThumbs(); render(); setStatus(imgs.length>10?"Seules les 10 premières images sont gardées (limite d'un carrousel).":"");
-    if(state.kind==="video") analyseFlashes(state.media[0]).catch(()=>{ state.flashBusy=false; setStatus("Analyse des flashs impossible sur cette vidéo."); render(); });
-  }catch(err){ setStatus("Impossible de lire ce fichier : "+(err?.message||"format non pris en charge")+"."); }
+    else { state.media=await Promise.all(imgs.slice(0,10).map(loadImage)); state.kind="image"; state.alts=state.media.map(()=> ""); }
+    renderMedia(); renderPick(); render(); setStatus(imgs.length>10?"Seules les 10 premières images sont gardées (limite d'un carrousel).":"");
+    if(state.kind==="video") analyseFlashes(state.media[0]).catch(()=>{ state.flashBusy=false; setStatus("Impossible d'analyser les clignotements de cette vidéo."); render(); });
+  }catch(err){ setStatus("Impossible de lire ce fichier. Essaie un autre format."); }
 }
 const drop=$("#drop"), fileIn=$("#file");
 drop.onclick=()=>fileIn.click(); drop.onkeydown=(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileIn.click(); } };
+$("#btn-change").onclick=()=>fileIn.click();
 fileIn.onchange=()=>{ handleFiles(fileIn.files); fileIn.value=""; };
 ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.add("over");}));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.remove("over");}));
-drop.addEventListener("drop",(e)=>handleFiles(e.dataTransfer.files));
-document.addEventListener("dragover",(e)=>e.preventDefault()); document.addEventListener("drop",(e)=>{ if(!drop.contains(e.target)){ e.preventDefault(); handleFiles(e.dataTransfer.files);} });
+document.addEventListener("dragover",(e)=>e.preventDefault());
+document.addEventListener("drop",(e)=>{ e.preventDefault(); drop.classList.remove("over"); if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files); });
 $("#caption").oninput=(e)=>{ state.caption=e.target.value; render(); };
 document.querySelectorAll('input[name=pf]').forEach(r=>r.onchange=()=>{ state.platform=r.value; render(); });
 $("#srt").onchange=async(e)=>{ const f=e.target.files[0]; if(!f) return; const cues=parseSRT(await f.text()); state.srt=cues.length?cues:null; state.srtName=f.name; $("#srt-name").textContent=cues.length?`${cues.length} sous-titres lus`:"Aucun sous-titre reconnu dans ce fichier"; render(); };
+
+/* ---------- exemple ---------- */
+function loadExample(){
+  resetChecks();
+  const ex=exampleImage(); state.media=[ex]; state.kind="image"; state.alts=[""]; state.example=true;
+  state.caption="🔥🔥🔥 NOUVEAU VISUEL !!! Le jackpot n'a jamais été aussi haut, ne ratez pas cette occasion unique de tenter votre chance cette semaine dans tous nos points de vente, cliquez ici pour jouer #lotonoel #jackpot";
+  $("#caption").value=state.caption;
+  state.elements=ex.boxes.map(b=>{ const m=measureBox(ex,b.box); return {...b,img:0,m,big:(b.type==="titre"||b.type==="chiffre")&&m&&m.hPx>=60}; }); state.elementsSource="exemple";
+  renderMedia(); renderPick(); render();
+}
+$("#btn-ex1").onclick=loadExample; $("#btn-ex2").onclick=loadExample;
+$("#btn-clear").onclick=()=>{ resetChecks(); state.media=[]; state.kind=null; state.alts=[]; state.example=false; state.caption=""; $("#caption").value=""; renderMedia(); renderPick(); render(); };
 
 /* ---------- rapport ---------- */
 function reportText(){
   const R=state.lastR||evaluate(); const L=[];
   L.push("Contrôle accessibilité · "+(state.platform==="instagram"?"Instagram":"Facebook")+" · "+new Date().toLocaleDateString("fr-FR"));
-  L.push(state.kind==="video"?`Vidéo ${state.media[0].w}×${state.media[0].h}, ${fr(state.media[0].dur)} s`:state.kind==="image"?`${state.media.length} image(s)`:"Aucune création");
-  for(const sec of POINTS){ L.push("",sec.sec.toUpperCase()); for(const [id,t,g] of sec.items){ const r=R[id]; L.push(`${id} ${t}${g?" [prioritaire]":""} : ${LABEL[r.s].toUpperCase()}`); if(r.d) L.push("   "+r.d.replace(/\n/g,"\n   ")); } }
+  L.push(state.kind==="video"?`Vidéo ${state.media[0].w}×${state.media[0].h}, ${fr(state.media[0].dur)} s`:state.kind==="image"?`${state.media.length} image(s)`:"Pas de visuel");
+  const lab={fix:"À CORRIGER",check:"À VÉRIFIER",ok:"OK",na:"Sans objet"};
+  for(const id of ORDER){ const r=R[id]; const st=(r.s==="check"&&state.checked.has(id))?"OK (vérifié)":lab[r.s]; L.push("",`${st} · ${INFO[id].t}`); if(r.d&&r.s!=="na") L.push("   "+r.d.replace(/\n/g,"\n   ")); if(r.s==="fix") L.push("   Comment corriger : "+INFO[id].how); }
   return L.join("\n");
 }
-$("#btn-copy").onclick=async()=>{ const t=reportText(); try{ await navigator.clipboard.writeText(t); setStatus("Rapport copié."); }catch{ const ta=document.createElement("textarea"); ta.value=t; document.body.append(ta); ta.select(); setStatus("Copie bloquée : le rapport est sélectionné, fais Cmd+C."); setTimeout(()=>ta.remove(),15000); } };
-$("#btn-dl").hidden=false;
-$("#btn-dl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([reportText()],{type:"text/plain;charset=utf-8"})); a.download="controle-accessibilite-"+new Date().toISOString().slice(0,10)+".txt"; document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); setStatus("Rapport téléchargé."); };
+$("#btn-copy").onclick=async()=>{ const t=reportText(); try{ await navigator.clipboard.writeText(t); setStatus("Rapport copié."); }catch{ setStatus("Copie impossible ici : utilise « Télécharger le rapport »."); } };
 
-/* ---------- exemple au chargement ---------- */
-const ex=exampleImage(); state.media=[ex]; state.kind="image"; state.alts=[""];
-state.caption="🔥🔥🔥 NOUVEAU VISUEL !!! Le jackpot n'a jamais été aussi haut, ne ratez pas cette occasion unique de tenter votre chance cette semaine dans tous nos points de vente partout, cliquez ici pour jouer #lotonoel #jackpot";
-$("#caption").value=state.caption;
-state.elements=ex.boxes.map(b=>{ const m=measureBox(ex,b.box); return {...b,img:0,m,big:(b.type==="titre"||b.type==="chiffre")&&m&&m.hPx>=60}; }); state.elementsSource="exemple";
-renderThumbs(); render();
+$("#btn-dl").hidden=false;
+$("#btn-dl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([reportText()],{type:"text/plain;charset=utf-8"})); a.download="controle-accessibilite-"+new Date().toISOString().slice(0,10)+".txt"; document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); };
+
+renderMedia(); renderPick(); render();
+if(location.hash==="#exemple") loadExample();
+
 })();
 </script>
 </body>
