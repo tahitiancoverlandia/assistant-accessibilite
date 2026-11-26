@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Assistant accessibilité réseaux sociaux</title>
+<meta name="description" content="Vérifie une publication Instagram ou Facebook point par point : texte alternatif, contrastes, légende, hashtags, emojis, liens, sous-titres et flashs. Tout se passe dans le navigateur.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<style>
+/* Mise en page : barre fine, intro courte, puis 2 colonnes (saisie | verdict) sur fond clair ; une seule couleur d'accent, les couleurs d'état servent au verdict */
+:root{
+  --bg:#F6F7F9; --surface:#FFFFFF; --soft:#F1F3F6; --line:#E5E8EE; --ink:#0F1728; --muted:#5A6476; --faint:#8A93A3;
+  --accent:#2952E3; --accent-ink:#FFFFFF; --accent-soft:#EAF0FF;
+  --fix:#C8281E; --fix-soft:#FDECEB; --check:#A55A00; --check-soft:#FFF4E2; --ok:#0A7A4B; --ok-soft:#E7F6EE; --na:#8A93A3; --na-soft:#F1F3F6;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.06);
+  --f-head:"Plus Jakarta Sans","Inter",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A3AEC2; --faint:#748099;
+  --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547;
+  --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20; --na:#748099; --na-soft:#192133;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A3AEC2; --faint:#748099;
+  --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547;
+  --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20; --na:#748099; --na-soft:#192133;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+.in{max-width:1200px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-head);font-weight:700;font-size:15.5px;letter-spacing:-.01em}
+.mark{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.mark svg{width:16px;height:16px}
+.seg{display:inline-flex;gap:2px;background:var(--soft);border:0;border-radius:10px;padding:3px;margin:0}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;padding:6px 14px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.seg input:checked+span{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
+.intro{padding-block:36px 24px}
+h1{font-family:var(--f-head);font-size:clamp(26px,3.4vw,38px);line-height:1.1;letter-spacing:-.025em;margin:0;text-wrap:balance}
+.intro p{color:var(--muted);margin:10px 0 0;max-width:60ch;font-size:15.5px}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start;padding-bottom:48px}
+@media (max-width:920px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:20px;min-width:0}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:22px;min-width:0}
+.card-h{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.step{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;display:grid;place-items:center;flex:none}
+h2{font-family:var(--f-head);font-size:17px;letter-spacing:-.01em;margin:0}
+.drop{border:1.5px dashed var(--line);background:var(--soft);border-radius:12px;padding:28px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.drop .ic{width:40px;height:40px;margin:0 auto 10px;border-radius:12px;background:var(--surface);display:grid;place-items:center;color:var(--accent);box-shadow:var(--shadow)}
+.drop .ic svg{width:20px;height:20px}
+.drop strong{display:block;font-weight:600;font-size:15px}
+.drop p{margin:4px 0 0;color:var(--faint);font-size:13px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:14px}
+.thumbs:empty{display:none}
+.thumb{position:relative;border-radius:10px;overflow:hidden;background:var(--soft);aspect-ratio:4/5;cursor:crosshair}
+.thumb canvas,.thumb video{width:100%;height:100%;object-fit:contain;display:block}
+.thumb .n{position:absolute;left:6px;top:6px;background:rgba(15,23,40,.7);color:#fff;font-size:11px;font-weight:600;border-radius:6px;padding:1px 6px}
+.meta{font-size:12.5px;color:var(--faint);margin:8px 0 0;font-variant-numeric:tabular-nums}
+.meta:empty{display:none}
+.example{display:flex;gap:8px;align-items:flex-start;background:var(--check-soft);color:var(--check);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:500;margin-top:12px}
+.pip{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pip strong{color:var(--ink);font-weight:600}
+.pip .row{display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap}
+.pip .sw{display:inline-flex;align-items:center;gap:6px}
+.pip i{display:inline-block;width:18px;height:18px;border-radius:6px;border:1px solid var(--line);background:var(--soft)}
+#pip-out{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+label.f{display:block;font-weight:600;font-size:13.5px;margin:0 0 6px}
+label.f em{font-style:normal;font-weight:400;color:var(--faint)}
+.field+.field{margin-top:16px}
+textarea,input[type=text]{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:10px 12px;resize:vertical;transition:border-color .15s,background .15s}
+textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.alts{display:grid;gap:8px}
+.alts .row{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:start}
+.alts .row b{display:grid;place-items:center;height:26px;margin-top:8px;background:var(--soft);border-radius:7px;font-size:12px;font-weight:600;color:var(--muted)}
+input[type=file]{font-size:13px;color:var(--muted)}
+input[type=file]::file-selector-button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 12px;margin-right:10px;cursor:pointer}
+.srt{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.status{font-size:13px;color:var(--muted);margin:12px 0 0}
+.status:empty{display:none}
+.score{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.score .big{font-family:var(--f-head);font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.score .big small{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:6px}
+.score .note{font-size:13px;color:var(--muted)}
+.meter{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--soft);margin:14px 0 16px;gap:2px}
+.meter i{display:block;height:100%}
+.meter .fix{background:var(--fix)} .meter .check{background:var(--check)} .meter .ok{background:var(--ok)} .meter .na{background:var(--line)}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.filters button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:99px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.filters button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.filters button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.filters .d{width:7px;height:7px;border-radius:50%}
+.sec{margin-top:18px}
+.sec h3{font-size:11.5px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin:0 0 4px}
+.pt{display:grid;grid-template-columns:10px 34px minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 2px;border-bottom:1px solid var(--line)}
+.sec .pt:last-child{border-bottom:0}
+.pt::before{content:"";width:9px;height:9px;border-radius:50%;margin-top:7px;background:var(--na)}
+.pt.fix::before{background:var(--fix);box-shadow:0 0 0 3px var(--fix-soft)} .pt.check::before{background:var(--check);box-shadow:0 0 0 3px var(--check-soft)} .pt.ok::before{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.pt .id{font-size:12.5px;font-weight:600;color:var(--faint);padding-top:2px;font-variant-numeric:tabular-nums}
+.pt .t{font-weight:600;font-size:14.5px}
+.pt.na .t{color:var(--muted);font-weight:500}
+.pt .grp{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:10.5px;font-weight:700;border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:2px;letter-spacing:.02em}
+.pt .d{color:var(--muted);font-size:13.5px;margin-top:2px;white-space:pre-line}
+.pt.na .d{color:var(--faint)}
+.pt .s{font-size:12px;font-weight:600;border-radius:99px;padding:2px 9px;white-space:nowrap}
+.pt.ok .s{background:var(--ok-soft);color:var(--ok)} .pt.fix .s{background:var(--fix-soft);color:var(--fix)}
+.pt.check .s{background:var(--check-soft);color:var(--check)} .pt.na .s{background:var(--na-soft);color:var(--na)}
+.pt .sug{margin-top:8px;font-size:13px;background:var(--soft);border-radius:8px;padding:8px 10px}
+.pt .sug button{margin-left:6px;font:inherit;font-size:12px;font-weight:600;border:0;background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:2px 9px;cursor:pointer}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.btn{font:inherit;font-weight:600;font-size:14px;border-radius:10px;padding:10px 16px;border:1px solid transparent;cursor:pointer;transition:filter .15s}
+.btn:hover{filter:brightness(1.06)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.legend{font-size:12.5px;color:var(--faint);margin:14px 0 0}
+.empty{color:var(--faint);font-size:13.5px;padding:16px 2px}
+@media (max-width:520px){.pt{grid-template-columns:10px 30px minmax(0,1fr)} .pt .s{grid-column:3;justify-self:start}.card{padding:18px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar"><div class="in">
+  <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Assistant accessibilité</div>
+  <fieldset class="seg platform" aria-label="Réseau social">
+    <label><input type="radio" name="pf" id="pf-ig" value="instagram" checked><span>Instagram</span></label>
+    <label><input type="radio" name="pf" id="pf-fb" value="facebook"><span>Facebook</span></label>
+  </fieldset>
+</div></header>
+
+<main class="in">
+  <section class="intro">
+    <h1>Vérifie ta publication avant de la poster.</h1>
+    <p>Dépose un visuel, un carrousel ou une vidéo, ajoute la légende et les textes alternatifs : chaque point de la fiche de contrôle est vérifié. Rien n'est envoyé, tout reste dans ton navigateur.</p>
+  </section>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-labelledby="h-depot">
+        <div class="card-h"><span class="step">1</span><h2 id="h-depot">Création</h2></div>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="drop-help">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
+          <strong>Glisse tes fichiers ici</strong>
+          <p id="drop-help">ou clique pour choisir · JPG, PNG, WebP, MP4, MOV · plusieurs images = carrousel</p>
+          <input type="file" id="file" accept="image/*,video/*" multiple hidden>
+        </div>
+        <div class="thumbs" id="thumbs" aria-live="polite"></div>
+        <p class="meta" id="meta"></p>
+        <div class="example" id="example-note">Exemple chargé : un faux visuel avec des erreurs. Glisse ta création pour le remplacer.</div>
+        <div class="pip" id="pip">
+          <strong>Pipette contraste</strong> · clique sur le texte, puis sur le fond, dans une vignette.
+          <div class="row"><span class="sw"><i id="sw-fg"></i>Texte</span><span class="sw"><i id="sw-bg"></i>Fond</span><span id="pip-out"></span></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-textes">
+        <div class="card-h"><span class="step">2</span><h2 id="h-textes">Textes</h2></div>
+        <div class="field">
+          <label class="f" for="caption">Légende du post</label>
+          <textarea id="caption" rows="6"></textarea>
+        </div>
+        <div class="field" id="alts-wrap">
+          <label class="f" id="alts-label">Texte alternatif <em>· un par image</em></label>
+          <div class="alts" id="alts" aria-labelledby="alts-label"></div>
+        </div>
+        <div class="field" id="srt-wrap" hidden>
+          <label class="f" for="srt">Sous-titres <em>· fichier .srt de la vidéo</em></label>
+          <div class="srt"><input type="file" id="srt" accept=".srt,.vtt,text/plain"><span id="srt-name" class="meta"></span></div>
+        </div>
+        <p class="status" id="status" role="status"></p>
+      </section>
+    </div>
+
+    <section class="card results" aria-labelledby="h-res">
+      <div class="card-h"><span class="step">3</span><h2 id="h-res">Verdict</h2></div>
+      <div class="score" id="score" aria-live="polite"></div>
+      <div class="meter" id="meter" aria-hidden="true"></div>
+      <div class="filters" id="filters" role="group" aria-label="Filtrer les points"></div>
+      <div id="results"></div>
+      <div class="actions">
+        <button class="btn primary" id="btn-copy" type="button">Copier le rapport</button>
+        <button class="btn ghost" id="btn-dl" type="button" hidden>Télécharger</button>
+      </div>
+      <p class="legend">Contrôles automatiques : légende, hashtags, emojis, liens, textes alternatifs, sous-titres (.srt), flashs des vidéos et contraste à la pipette. « À vérifier » : à contrôler à l'œil.</p>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const POINTS = [
+  {sec:"Visuels et carrousels", items:[
+    ["1.1","Texte alternatif sur chaque image",true],["1.2","Image décorative signalée",true],["1.3","Infos clés aussi dans la légende",true],
+    ["1.4","Carrousel : un texte alternatif par slide",false],["1.5","Contraste texte / fond d'au moins 4,5:1",true],
+    ["1.6","Pas de sens porté par la couleur seule",false],["1.7","Lisible sur téléphone",false]]},
+  {sec:"Vidéos, Reels et Stories", items:[
+    ["2.1","Sous-titres complets, relus et synchronisés",false],["2.2","Description de ce qui est montré, dans la légende",false],
+    ["2.3","Pas de flash plus de 3 fois par seconde",false],["2.4","Texte à l'écran affiché assez longtemps",false],["2.5","Fichier des sous-titres conservé",false]]},
+  {sec:"Légende, structure, hashtags et liens", items:[
+    ["3.1","Phrases courtes, information principale en premier",false],["3.2","Texte structuré : des repères clairs",true],
+    ["3.3","Hashtags avec une majuscule à chaque mot",false],["3.4","Emojis rares, jamais répétés",false],["3.5","Liens explicites",true]]},
+  {sec:"Charte jeu responsable (en plus)", items:[
+    ["P1","Pictogramme -18 visible sur le visuel",false],["P2","Message de mise en garde présent",false]]}
+];
+const LABEL = {ok:"Conforme",fix:"À corriger",check:"À vérifier",na:"Sans objet"};
+
+const state = { filter:"all", media:[], kind:null, example:true, caption:"", alts:[], platform:"instagram", srt:null, srtName:"",
+  ai:null, elements:null, elementsSource:null, flash:null, flashBusy:false, pick:[], videoInfo:null };
+
+/* ---------- couleurs ---------- */
+const lin = (v) => { v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); };
+const lum = (c) => 0.2126*lin(c[0])+0.7152*lin(c[1])+0.0722*lin(c[2]);
+const ratio = (a,b) => { const x=lum(a), y=lum(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); };
+const fr = (n,d=1) => n.toFixed(d).replace(".",",");
+const hex = (c) => "#"+c.map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
+
+function measureBox(m, box){ // box en % [x,y,w,h]
+  const W=m.aw, H=m.ah; const d=m.data.data;
+  let x0=Math.max(0,Math.floor(box[0]/100*W)), y0=Math.max(0,Math.floor(box[1]/100*H));
+  let x1=Math.min(W,Math.ceil((box[0]+box[2])/100*W)), y1=Math.min(H,Math.ceil((box[1]+box[3])/100*H));
+  if (x1-x0<3||y1-y0<3) return null;
+  const px=[]; const step=Math.max(1,Math.floor(Math.sqrt((x1-x0)*(y1-y0)/6000)));
+  for(let y=y0;y<y1;y+=step) for(let x=x0;x<x1;x+=step){ const i=(y*W+x)*4; px.push([d[i],d[i+1],d[i+2]]); }
+  // k-means k=2 initialisé sur le plus clair / plus sombre
+  let a=px.reduce((p,c)=>lum(c)<lum(p)?c:p), b=px.reduce((p,c)=>lum(c)>lum(p)?c:p);
+  let ca=[],cb=[];
+  for(let it=0;it<8;it++){
+    ca=[];cb=[];
+    for(const c of px){ const da=(c[0]-a[0])**2+(c[1]-a[1])**2+(c[2]-a[2])**2, db=(c[0]-b[0])**2+(c[1]-b[1])**2+(c[2]-b[2])**2; (da<db?ca:cb).push(c); }
+    const mean=(arr,fb)=>arr.length?[0,1,2].map(k=>arr.reduce((s,c)=>s+c[k],0)/arr.length):fb;
+    a=mean(ca,a); b=mean(cb,b);
+  }
+  if (!ca.length||!cb.length) return null;
+  const fg = ca.length<cb.length ? a : b, bg = ca.length<cb.length ? b : a;
+  return {fg,bg,ratio:ratio(fg,bg),hPx:(y1-y0)*(m.w/W)*(1080/m.w)}; // hauteur ramenée à un visuel de 1080 px de large
+}
+
+/* ---------- médias ---------- */
+async function loadImage(file){
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 1600/bmp.width);
+  const c = document.createElement("canvas"); c.width=Math.round(bmp.width*scale); c.height=Math.round(bmp.height*scale);
+  const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bmp,0,0,c.width,c.height);
+  return {type:"image", file, w:bmp.width, h:bmp.height, aw:c.width, ah:c.height, canvas:c, data:g.getImageData(0,0,c.width,c.height)};
+}
+function exampleImage(){
+  const W=1080,H=1350,c=document.createElement("canvas"); c.width=W; c.height=H; const g=c.getContext("2d");
+  const gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,"#1B74D1"); gr.addColorStop(1,"#0B3A7A"); g.fillStyle=gr; g.fillRect(0,0,W,H);
+  for(const [x,y,r,col] of [[140,180,60,"#FFC400"],[930,240,46,"#E5484D"],[880,1040,80,"#FFFFFF22"],[160,980,36,"#18A06C"]]){g.fillStyle=col;g.beginPath();g.arc(x,y,r,0,7);g.fill();}
+  g.textAlign="center"; g.fillStyle="#FFFFFF"; g.font="800 92px Arial"; g.fillText("JACKPOT",W/2,520);
+  g.fillStyle="#FFC400"; g.font="800 170px Arial"; g.fillText("2,8 MDS",W/2,720);
+  g.fillStyle="#6FA6E6"; g.font="600 44px Arial"; g.fillText("Tirage ce samedi",W/2,820);
+  g.fillStyle="#5C8FD0"; g.font="400 20px Arial"; g.fillText("Jouer comporte des risques : endettement, isolement, dépendance.",W/2,1290);
+  const data=g.getImageData(0,0,W,H);
+  return {type:"image", file:null, w:W, h:H, aw:W, ah:H, canvas:c, data, example:true,
+    boxes:[{texte:"JACKPOT",type:"titre",box:[30,32,40,7.5]},{texte:"2,8 MDS",type:"chiffre",box:[18,41,64,13]},
+           {texte:"Tirage ce samedi",type:"autre",box:[32,57.5,36,4.5]},{texte:"Jouer comporte des risques…",type:"mention_legale",box:[19,94.4,62,1.8]}]};
+}
+async function loadVideo(file){
+  const url=URL.createObjectURL(file); const v=document.createElement("video");
+  v.src=url; v.muted=true; v.playsInline=true; v.preload="auto";
+  await new Promise((res,rej)=>{ v.onloadeddata=res; v.onerror=()=>rej(new Error("vidéo illisible")); });
+  return {type:"video", file, url, el:v, w:v.videoWidth, h:v.videoHeight, dur:v.duration};
+}
+function seek(v,t){ return new Promise(res=>{ const f=()=>{v.removeEventListener("seeked",f);res();}; v.addEventListener("seeked",f); v.currentTime=Math.min(t,Math.max(0,v.duration-0.05)); }); }
+async function grabFrame(m,t,maxW=1280){
+  await seek(m.el,t); const s=Math.min(1,maxW/m.w); const c=document.createElement("canvas"); c.width=Math.round(m.w*s); c.height=Math.round(m.h*s);
+  const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(m.el,0,0,c.width,c.height);
+  return {canvas:c, data:g.getImageData(0,0,c.width,c.height), w:m.w, h:m.h, aw:c.width, ah:c.height, t};
+}
+
+/* ---------- flashs (WCAG 2.3.1, approximation par quarts d'écran) ---------- */
+async function analyseFlashes(m){
+  state.flashBusy=true; render();
+  const v=m.el, fps=20, maxT=Math.min(v.duration,90), n=Math.floor(maxT*fps);
+  const c=document.createElement("canvas"); c.width=32; c.height=32; const g=c.getContext("2d",{willReadFrequently:true});
+  const series=[[],[],[],[],[]]; // 4 quarts + plein écran
+  for(let i=0;i<n;i++){
+    await seek(v,i/fps); g.drawImage(v,0,0,32,32); const d=g.getImageData(0,0,32,32).data;
+    const q=[0,0,0,0]; let all=0;
+    for(let y=0;y<32;y++) for(let x=0;x<32;x++){ const k=(y*32+x)*4; const L=lum([d[k],d[k+1],d[k+2]]); q[(y<16?0:2)+(x<16?0:1)]+=L; all+=L; }
+    q.forEach((s,j)=>series[j].push(s/256)); series[4].push(all/1024);
+    if(i%20===0) setStatus(`Analyse des flashs : ${Math.round(i/n*100)} %`);
+  }
+  let worst={count:0,t:0};
+  for(const s of series){
+    const tr=[]; let ref=s[0], dir=0;
+    for(let i=1;i<s.length;i++){ const dL=s[i]-ref;
+      if(Math.abs(dL)>=0.1 && Math.min(s[i],ref)<0.8){ const nd=Math.sign(dL); if(nd!==dir){ tr.push(i/fps); dir=nd; } ref=s[i]; }
+      else if (Math.sign(dL)===dir) ref = dir>0 ? Math.max(ref,s[i]) : Math.min(ref,s[i]);
+    }
+    for(let i=0;i<tr.length;i++){ let j=i; while(j<tr.length && tr[j]-tr[i]<1) j++; const fl=Math.floor((j-i)/2); if(fl>worst.count) worst={count:fl,t:tr[i]}; }
+  }
+  state.flash={max:worst.count,t:worst.t,analysed:maxT,partial:maxT<v.duration};
+  state.flashBusy=false; setStatus(""); render();
+}
+
+/* ---------- SRT ---------- */
+function parseSRT(txt){
+  const cues=[]; const re=/(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})[^\n]*\n([\s\S]*?)(?=\n\s*\n|\n?$)/g; let m;
+  const ts=(h,mi,s,ms)=>(+h)*3600+(+mi)*60+(+s)+(+ms.padEnd(3,"0"))/1000;
+  while((m=re.exec(txt.replace(/\r/g,"")))){ cues.push({a:ts(m[1],m[2],m[3],m[4]),b:ts(m[5],m[6],m[7],m[8]),text:m[9].trim()}); }
+  return cues;
+}
+
+/* ---------- légende ---------- */
+const EMOJI=/\p{Extended_Pictographic}/gu;
+const FANCY=/[\u{1D400}-\u{1D7FF}\u{FF01}-\u{FF5E}\u{24B6}-\u{24E9}\u{1F130}-\u{1F189}]/u;
+function captionChecks(cap){
+  const out={};
+  const lines=cap.split("\n"); const first=(lines.find(l=>l.trim())||"").trim();
+  const firstSentence=(first.split(/(?<=[.!?])\s/)[0]||"");
+  out.firstLen=first.length; out.firstWords=firstSentence.split(/\s+/).filter(Boolean).length;
+  out.fancy=FANCY.test(cap);
+  out.breaks=(cap.match(/\n/g)||[]).length;
+  out.emojiBullets=lines.filter(l=>/^\s*\p{Extended_Pictographic}/u.test(l)).length;
+  const tags=cap.match(/#[\p{L}\p{N}_]+/gu)||[];
+  out.tags=tags; out.badTags=tags.filter(t=>{const w=t.slice(1); return w.length>=6 && (w===w.toLowerCase()||w===w.toUpperCase()) && /\p{L}/u.test(w);});
+  const em=cap.match(EMOJI)||[]; out.emojis=em;
+  out.repeat=/(\p{Extended_Pictographic})(?:️)?\s*\1/u.test(cap);
+  out.clickHere=/\b(clique[zr]?|click)\s+(ici|here)\b|\ben cliquant ici\b/i.test(cap);
+  out.urls=cap.match(/\bhttps?:\/\/\S+|\bwww\.\S+/gi)||[];
+  out.linkBio=/lien en bio|lien dans la bio/i.test(cap);
+  out.jr=/risque|modération|moderation|jeu responsable|interdit aux mineurs|\-\s?18|18 ans/i.test(cap);
+  return out;
+}
+function altChecks(alt){
+  const a=alt.trim(); if(!a) return {level:"fix",msg:"vide"};
+  if(/^(une?\s+)?(image|photo|illustration)\s+(de|d['’]|du|des)\b/i.test(a)) return {level:"check",msg:"commence par « image de » : va droit au message"};
+  if(a.length<20) return {level:"fix",msg:`trop court (${a.length} caractères) : message, chiffres et dates clés`};
+  if(a.length>320) return {level:"check",msg:`long (${a.length} caractères) : vise 1 à 2 phrases`};
+  return {level:"ok",msg:""};
+}
+
+/* ---------- évaluation ---------- */
+function evaluate(){
+  const R={}, set=(id,s,d,sug)=>R[id]={s,d,sug};
+  const isImg=state.kind==="image", isVid=state.kind==="video", n=state.media.length, ai=state.ai, cap=state.caption, cc=captionChecks(cap);
+  const ig=state.platform==="instagram";
+  // 1.1
+  if(isVid) set("1.1","na","Une vidéo n'a pas de texte alternatif sur Instagram et Facebook : c'est la légende qui décrit (voir 2.2).");
+  else if(isImg){
+    const res=state.media.map((_,i)=>altChecks(state.alts[i]||""));
+    const bad=res.map((r,i)=>r.level!=="ok"?`Image ${i+1} : ${r.msg}`:null).filter(Boolean);
+    const aiBad=(ai?.alt_evaluation||[]).map((e,i)=>e && e.ok===false && (state.alts[i]||"").trim()?`Image ${i+1} : ${e.remarque}`:null).filter(Boolean);
+    const lvl=res.some(r=>r.level==="fix")?"fix":(res.some(r=>r.level==="check")||aiBad.length)?"check":"ok";
+    const sug=(ai?.alt_proposes||[]).map((t,i)=>({label:`Proposition image ${i+1}`,text:String(t||""),target:i})).filter(x=>x.text);
+    set("1.1",lvl, lvl==="ok"?`${n>1?n+" textes alternatifs renseignés":"Texte alternatif renseigné"}, longueur correcte.`:[...bad,...aiBad].join("\n")||"Texte alternatif à revoir.", sug);
+  } else set("1.1","na","Ajoute une création.");
+  // 1.2
+  if(!n) set("1.2","na","Ajoute une création.");
+  else if(ai?.images_decoratives?.some(Boolean)) set("1.2","check","Une image semble ne porter aucune information. Sur Instagram et Facebook, un post porte un message : écris quand même un texte alternatif.");
+  else set("1.2","na",ig?"Sans objet sur Instagram : chaque post porte un message, on écrit toujours un texte alternatif.":"Sans objet sur Facebook : chaque post porte un message, on écrit toujours un texte alternatif.");
+  // 1.3
+  if(!cap.trim()) set("1.3","fix","La légende est vide : gain, dates, conditions et mention jeu responsable doivent y être écrits en clair.");
+  else {
+    const miss=(ai?.infos_absentes_legende||[]).map(String).filter(Boolean);
+    const issues=[]; if(miss.length) issues.push("Infos du visuel absentes de la légende : "+miss.join(" · ")); if(!cc.jr) issues.push("Pas de mention jeu responsable dans la légende (ex. « Jouer comporte des risques »).");
+    if(issues.length) set("1.3","fix",issues.join("\n"));
+    else if(!ai && n) set("1.3","check","Mention jeu responsable présente. Vérifie que les chiffres et dates du visuel sont aussi dans la légende.");
+    else set("1.3","ok","Les infos clés du visuel et la mention jeu responsable sont dans la légende.");
+  }
+  // 1.4
+  if(!isImg||n<2) set("1.4","na",isVid?"Vidéo : sans objet.":"Une seule image : pas de carrousel.");
+  else { const filled=state.alts.slice(0,n).filter(a=>a&&a.trim()).length; set("1.4",filled===n?"ok":"fix",filled===n?`Carrousel de ${n} images : un texte alternatif par slide.`:`Carrousel de ${n} images : ${n-filled} slide(s) sans texte alternatif.`); }
+  // 1.5
+  const els=state.elements;
+  if(!n) set("1.5","na","Ajoute une création.");
+  else if(els && els.length){
+    const rows=els.filter(e=>e.m && e.type!=="logo");
+    const fails=rows.filter(e=>e.m.ratio < (e.big?3:4.5));
+    const worst=rows.reduce((p,e)=>!p||e.m.ratio<p.m.ratio?e:p,null);
+    const src=state.elementsSource==="exemple"?" (mesuré sur l'exemple)":" (mesuré sur les pixels)";
+    if(fails.length) set("1.5","fix",fails.map(e=>`« ${e.texte} » : ${fr(e.m.ratio)}:1, minimum ${e.big?"3":"4,5"}:1${e.img!=null&&n>1?` (image ${e.img+1})`:""}`).join("\n")+src);
+    else if(worst) set("1.5","ok",`Plus faible contraste : « ${worst.texte} » à ${fr(worst.m.ratio)}:1${src}.`);
+    else set("1.5","check","Aucun texte mesurable : utilise la pipette.");
+  } else if(state.pick.length===2){ const r=ratio(state.pick[0],state.pick[1]); set("1.5",r>=4.5?"ok":r>=3?"check":"fix",`Pipette : ${fr(r)}:1 ${r>=4.5?"(conforme)":r>=3?"(suffit seulement pour un très gros texte)":"(insuffisant)"}.`); }
+  else set("1.5","check","Mesure chaque texte important à la pipette : clique sur le texte, puis sur le fond.");
+  // 1.6
+  if(!n) set("1.6","na","Ajoute une création.");
+  else if(ai?.couleur_seule) set("1.6",ai.couleur_seule.probleme?"fix":"ok",ai.couleur_seule.remarque||(ai.couleur_seule.probleme?"Une information ne passe que par la couleur.":"Aucune information portée par la couleur seule."));
+  else set("1.6","check","À l'œil : une info (gagné/perdu, bon/mauvais) passe-t-elle seulement par une couleur ?");
+  // 1.7
+  if(!n) set("1.7","na","Ajoute une création.");
+  else if(els && els.length){
+    const small=els.filter(e=>e.m && (e.type==="mention_legale"||e.type==="autre") && e.m.hPx<30);
+    if(small.length) set("1.7","fix",small.map(e=>`« ${e.texte} » : environ ${Math.round(e.m.hPx)} px de haut pour 1080 px de large (viser 30 px ou plus)`).join("\n"));
+    else set("1.7","ok","Tous les textes mesurés font au moins 30 px de haut sur une base de 1080 px de large.");
+  } else set("1.7","check","À l'œil : les mentions doivent faire environ 30 px minimum sur un visuel de 1080 px de large.");
+  // 2.x
+  if(!isVid){ ["2.1","2.2","2.3","2.4","2.5"].forEach(id=>set(id,"na",n?"Pas une vidéo.":"Ajoute une vidéo pour ces points.")); }
+  else {
+    if(state.srt){
+      const c=state.srt, fast=c.filter(q=>q.text.replace(/\s+/g," ").length/Math.max(0.01,q.b-q.a)>17), short=c.filter(q=>q.b-q.a<1), long=c.filter(q=>q.text.split("\n").length>2||q.text.split("\n").some(l=>l.length>42));
+      const over=c.filter(q=>q.b>state.videoInfo.dur+0.5);
+      const iss=[]; if(fast.length) iss.push(`${fast.length} sous-titre(s) trop rapide(s) (plus de 17 caractères par seconde)`); if(short.length) iss.push(`${short.length} sous-titre(s) affiché(s) moins d'1 seconde`); if(long.length) iss.push(`${long.length} sous-titre(s) de plus de 2 lignes ou 42 caractères par ligne`); if(over.length) iss.push(`${over.length} sous-titre(s) après la fin de la vidéo : vérifie la synchro`);
+      set("2.1",iss.length?"fix":"check",iss.length?iss.join("\n"):`${c.length} sous-titres, rythme et longueur corrects. Relis noms et chiffres à l'écoute.`);
+    } else if(ai?.video?.sous_titres_incrustes) set("2.1","check","Sous-titres incrustés repérés sur les images testées : relis noms, chiffres et sigles à l'écoute.");
+    else set("2.1",ai?"fix":"check",ai?"Aucun sous-titre repéré sur les images testées et pas de fichier .srt. Si la vidéo a une voix ou des paroles, il faut des sous-titres.":"Ajoute le .srt, ou vérifie à l'œil que la vidéo a des sous-titres incrustés si elle a une voix.");
+    if(!cap.trim()) set("2.2","fix","Légende vide : décris ce que montre la vidéo.");
+    else if(ai?.video) set("2.2",ai.video.description_dans_legende?"ok":"fix",ai.video.remarque||"");
+    else set("2.2","check","À l'œil : la légende décrit-elle ce que montre la vidéo ?");
+    if(state.flashBusy) set("2.3","check","Analyse des flashs en cours…");
+    else if(state.flash){ const f=state.flash; set("2.3",f.max>3?"fix":"ok",f.max>3?`Jusqu'à ${f.max} flashs en 1 seconde vers ${fr(f.t)} s : maximum 3.`:`Maximum mesuré : ${f.max} flash(s) par seconde${f.partial?` (sur les ${Math.round(f.analysed)} premières secondes)`:""}. Les flashs rouges saturés ne sont pas mesurés : à l'œil.`); }
+    else set("2.3","check","Analyse des flashs pas encore faite.");
+    set("2.4","check","À l'œil : environ 3 mots par seconde, plus pour les chiffres. « Jackpot 2,8 milliards, tirage samedi » : au moins 2 s, mieux 3 s.");
+    set("2.5",state.srt?"ok":"fix",state.srt?`Fichier ${state.srtName} : ${state.srt.length} sous-titres.`:"Pas de fichier .srt : garde-en un par spot, pour Instagram, Facebook, le site et la TV.");
+  }
+  // 3.1
+  if(!cap.trim()) set("3.1","fix","Légende vide.");
+  else {
+    const iss=[]; if(ig && cc.firstLen>125) iss.push(`Première ligne de ${cc.firstLen} caractères : Instagram coupe vers 125 caractères (« … plus »). Mets l'essentiel avant.`);
+    if(cc.firstWords>20) iss.push(`Première phrase de ${cc.firstWords} mots : vise moins de 20.`);
+    if(ai?.legende && ai.legende.info_principale_en_premier===false) iss.push(ai.legende.remarque||"L'information principale n'arrive pas en premier.");
+    set("3.1",iss.length?"fix":(ai?"ok":"ok"),iss.length?iss.join("\n"):`Première ligne de ${cc.firstLen} caractères, première phrase de ${cc.firstWords} mots.`);
+  }
+  // 3.2
+  if(!cap.trim()) set("3.2","na","Légende vide.");
+  else { const iss=[];
+    if(cc.fancy) iss.push("Police « fantaisie » détectée (lettres grasses ou italiques spéciales) : le lecteur d'écran ne la lit pas.");
+    if(cap.length>220 && cc.breaks===0) iss.push(`${cap.length} caractères sans aucun retour à la ligne : coupe en blocs courts.`);
+    const lvl=iss.length?"fix":cc.emojiBullets>=2?"check":"ok";
+    if(cc.emojiBullets>=2 && !iss.length) iss.push(`${cc.emojiBullets} lignes commencent par un emoji : préfère des tirets pour les listes.`);
+    set("3.2",lvl,iss.length?iss.join("\n"):`Texte en ${cc.breaks+1} ligne(s), sans police spéciale.`); }
+  // 3.3
+  if(!cc.tags.length) set("3.3","na","Aucun hashtag.");
+  else if(Array.isArray(ai?.hashtags)){ const h=ai.hashtags.filter(x=>x&&x.propose&&x.actuel&&String(x.propose)!==String(x.actuel));
+    set("3.3",h.length?"fix":"ok",h.length?"À corriger : "+h.map(x=>`${x.actuel} → ${x.propose}`).join(" · "):`${cc.tags.length} hashtag(s) lisibles.`); }
+  else set("3.3",cc.badTags.length?"check":"ok",cc.badTags.length?`Tout en minuscules ou en majuscules : ${cc.badTags.join(" ")}. S'ils contiennent plusieurs mots, mets une majuscule à chacun (ex. #JeuConcours, #PlaisirDOffrir).`:`${cc.tags.length} hashtag(s) lisibles.`);
+  // 3.4
+  if(!cc.emojis.length) set("3.4","ok","Aucun emoji.");
+  else if(cc.repeat) set("3.4","fix",`Emoji répété (${cc.emojis.join("")}) : chacun est lu à voix haute. Garde-en un seul.`);
+  else set("3.4",cc.emojis.length>3?"check":"ok",`${cc.emojis.length} emoji(s) : ${cc.emojis.join(" ")}${cc.emojis.length>3?". C'est beaucoup : vise 1 à 3.":"."}`);
+  // 3.5
+  if(cc.clickHere) set("3.5","fix","« Cliquez ici » : dis où mène le lien (ex. « Résultats sur notre site »).");
+  else if(cc.urls.length && ig && !cc.linkBio) set("3.5","check",`Lien dans la légende (${cc.urls[0]}) : il n'est pas cliquable sur Instagram. Écris plutôt « … sur notre site (lien en bio) ».`);
+  else if(cc.urls.length || cc.linkBio) set("3.5","ok","Les liens disent où ils mènent.");
+  else set("3.5","na","Aucun lien.");
+  // P1 P2
+  if(!n) { set("P1","na","Ajoute une création."); set("P2","na","Ajoute une création."); }
+  else if(ai){ set("P1",ai.moins18?"ok":"fix",ai.moins18?"Pictogramme -18 repéré.":"Pas de pictogramme -18 repéré sur le visuel."); set("P2",ai.mise_en_garde?"ok":"fix",ai.mise_en_garde?"Message de mise en garde repéré.":"Pas de message de mise en garde repéré."); }
+  else { set("P1","check","À l'œil : le pictogramme -18 est-il visible ?"); set("P2","check","À l'œil : le message de mise en garde est-il visible et lisible ?"); }
+  return R;
+}
+
+/* ---------- rendu ---------- */
+function render(){
+  const R=evaluate(); const counts={ok:0,fix:0,check:0,na:0};
+  const res=$("#results"); res.replaceChildren();
+  for(const sec of POINTS){
+    const s=document.createElement("section"); s.className="sec"; const h=document.createElement("h3"); h.textContent=sec.sec; s.append(h);
+    for(const [id,title,grp] of sec.items){
+      const r=R[id]; counts[r.s]++;
+      const row=document.createElement("div"); row.className="pt "+r.s;
+      const i=document.createElement("div"); i.className="id"; i.textContent=id;
+      const body=document.createElement("div"); body.style.minWidth="0";
+      const t=document.createElement("div"); t.className="t"; t.textContent=title;
+      if(grp){ const g=document.createElement("span"); g.className="grp"; g.textContent="Prioritaire"; t.append(g); }
+      const d=document.createElement("div"); d.className="d"; d.textContent=r.d||"";
+      body.append(t,d);
+      for(const sg of (r.sug||[])){
+        const box=document.createElement("div"); box.className="sug"; const b=document.createElement("strong"); b.textContent=sg.label+" : ";
+        const tx=document.createElement("span"); tx.textContent=sg.text; const btn=document.createElement("button"); btn.type="button"; btn.textContent="Utiliser";
+        btn.onclick=()=>{ const inp=document.getElementById("alt-"+sg.target); if(inp){ inp.value=sg.text; state.alts[sg.target]=sg.text; render(); } };
+        box.append(b,tx,btn); body.append(box);
+      }
+      const st=document.createElement("span"); st.className="s"; st.textContent=LABEL[r.s];
+      row.append(i,body,st); s.append(row);
+    }
+    res.append(s);
+  }
+  const total=counts.fix+counts.check+counts.ok+counts.na, applicable=counts.fix+counts.check+counts.ok;
+  const sc=$("#score"); sc.replaceChildren();
+  const big=document.createElement("div"); big.className="big";
+  if(counts.fix){ big.textContent=String(counts.fix); const sm=document.createElement("small"); sm.textContent=counts.fix>1?"points à corriger":"point à corriger"; big.append(sm); big.style.color="var(--fix)"; }
+  else if(counts.check){ big.textContent=String(counts.check); const sm=document.createElement("small"); sm.textContent=counts.check>1?"points à vérifier":"point à vérifier"; big.append(sm); big.style.color="var(--check)"; }
+  else { big.textContent="Tout est bon"; big.style.color="var(--ok)"; }
+  const note=document.createElement("div"); note.className="note"; note.textContent=`${counts.ok} conforme${counts.ok>1?"s":""} sur ${applicable} point${applicable>1?"s":""} applicable${applicable>1?"s":""}`;
+  sc.append(big,note);
+  const me=$("#meter"); me.replaceChildren();
+  for(const k of ["fix","check","ok","na"]) if(counts[k]){ const b=document.createElement("i"); b.className=k; b.style.flex=String(counts[k]); me.append(b); }
+  const fl=$("#filters"); fl.replaceChildren();
+  for(const [k,lab] of [["all","Tous"],["fix","À corriger"],["check","À vérifier"],["ok","Conformes"]]){
+    const b=document.createElement("button"); b.type="button"; b.setAttribute("aria-pressed",String(state.filter===k));
+    if(k!=="all"){ const d=document.createElement("span"); d.className="d"; d.style.background=`var(--${k})`; b.append(d); }
+    b.append(document.createTextNode(`${lab} ${k==="all"?total:counts[k]}`));
+    b.onclick=()=>{ state.filter=k; render(); }; fl.append(b);
+  }
+  let shown=0;
+  res.querySelectorAll(".sec").forEach(sec=>{ let vis=0; sec.querySelectorAll(".pt").forEach(p=>{ const ok=state.filter==="all"||p.classList.contains(state.filter); p.hidden=!ok; if(ok) vis++; }); sec.hidden=!vis; shown+=vis; });
+  if(!shown){ const e=document.createElement("p"); e.className="empty"; e.textContent="Aucun point dans cette catégorie."; res.append(e); }
+  state.lastR=R;
+}
+function setStatus(t){ $("#status").textContent=t; }
+
+/* ---------- interface ---------- */
+function renderThumbs(){
+  const th=$("#thumbs"); th.replaceChildren();
+  state.media.forEach((m,i)=>{
+    const d=document.createElement("div"); d.className="thumb"; d.title="Clique pour la pipette";
+    const n=document.createElement("span"); n.className="n"; n.textContent=state.kind==="video"?"Vidéo":String(i+1);
+    if(m.type==="image"){ const c=m.canvas; c.setAttribute("aria-label",`Image ${i+1}`); d.append(c); d.onclick=(e)=>pipette(e,m,c); }
+    else { const v=m.el; v.controls=true; d.append(v); d.style.aspectRatio=`${m.w}/${m.h}`; d.style.cursor="default"; }
+    d.append(n); th.append(d);
+  });
+  const meta=$("#meta");
+  if(state.kind==="video"){ const m=state.media[0]; meta.textContent=`${m.w} × ${m.h} px · ${fr(m.dur)} s${Math.abs(m.w/m.h-9/16)<0.03?" · format 9:16, bon pour un Reel":""}`; }
+  else if(state.kind==="image") meta.textContent=state.media.map((m,i)=>`${state.media.length>1?"Image "+(i+1)+" : ":""}${m.w} × ${m.h} px`).join(" · ");
+  else meta.textContent="";
+  $("#example-note").hidden=!state.example;
+  $("#srt-wrap").hidden=state.kind!=="video";
+  $("#alts-wrap").hidden=state.kind!=="image";
+  const alts=$("#alts"); alts.replaceChildren();
+  if(state.kind==="image") state.media.forEach((_,i)=>{
+    const row=document.createElement("div"); row.className="row"; const b=document.createElement("b"); b.textContent=String(i+1); b.setAttribute("aria-hidden","true");
+    const inp=document.createElement("textarea"); inp.rows=2; inp.id="alt-"+i; inp.value=state.alts[i]||""; inp.setAttribute("aria-label",`Texte alternatif de l'image ${i+1}`);
+    inp.oninput=()=>{ state.alts[i]=inp.value; render(); };
+    row.append(b,inp); alts.append(row);
+  });
+}
+function pipette(e,m,c){
+  const r=c.getBoundingClientRect(); // object-fit contain
+  const s=Math.min(r.width/c.width,r.height/c.height); const ox=(r.width-c.width*s)/2, oy=(r.height-c.height*s)/2;
+  const x=Math.floor((e.clientX-r.left-ox)/s), y=Math.floor((e.clientY-r.top-oy)/s); if(x<0||y<0||x>=c.width||y>=c.height) return;
+  const g=c.getContext("2d",{willReadFrequently:true}); const d=g.getImageData(Math.max(0,x-1),Math.max(0,y-1),3,3).data; const col=[0,1,2].map(k=>{let s=0;for(let j=0;j<9;j++)s+=d[j*4+k];return s/9;});
+  if(state.pick.length>=2) state.pick=[]; state.pick.push(col);
+  $("#sw-fg").style.background=state.pick[0]?hex(state.pick[0]):""; $("#sw-bg").style.background=state.pick[1]?hex(state.pick[1]):"";
+  $("#pip-out").textContent=state.pick.length===2?`${fr(ratio(state.pick[0],state.pick[1]))}:1`:"Clique maintenant sur le fond";
+  render();
+}
+async function handleFiles(files){
+  const list=[...files]; if(!list.length) return;
+  const vids=list.filter(f=>f.type.startsWith("video/")), imgs=list.filter(f=>f.type.startsWith("image/"));
+  setStatus("Chargement…");
+  try{
+    state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.example=false; state.srt=null; state.srtName=""; $("#srt-name").textContent="";
+    if(vids.length){ const m=await loadVideo(vids[0]); state.media=[m]; state.kind="video"; state.videoInfo={dur:m.dur}; state.alts=[]; }
+    else if(imgs.length){ state.media=await Promise.all(imgs.slice(0,10).map(loadImage)); state.kind="image"; state.alts=state.media.map(()=> ""); }
+    else { setStatus("Format non reconnu : dépose une image (JPG, PNG, WebP) ou une vidéo (MP4, MOV)."); return; }
+    renderThumbs(); render(); setStatus(imgs.length>10?"Seules les 10 premières images sont gardées (limite d'un carrousel).":"");
+    if(state.kind==="video") analyseFlashes(state.media[0]).catch(()=>{ state.flashBusy=false; setStatus("Analyse des flashs impossible sur cette vidéo."); render(); });
+  }catch(err){ setStatus("Impossible de lire ce fichier : "+(err?.message||"format non pris en charge")+"."); }
+}
+const drop=$("#drop"), fileIn=$("#file");
+drop.onclick=()=>fileIn.click(); drop.onkeydown=(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileIn.click(); } };
+fileIn.onchange=()=>{ handleFiles(fileIn.files); fileIn.value=""; };
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",(e)=>handleFiles(e.dataTransfer.files));
+document.addEventListener("dragover",(e)=>e.preventDefault()); document.addEventListener("drop",(e)=>{ if(!drop.contains(e.target)){ e.preventDefault(); handleFiles(e.dataTransfer.files);} });
+$("#caption").oninput=(e)=>{ state.caption=e.target.value; render(); };
+document.querySelectorAll('input[name=pf]').forEach(r=>r.onchange=()=>{ state.platform=r.value; render(); });
+$("#srt").onchange=async(e)=>{ const f=e.target.files[0]; if(!f) return; const cues=parseSRT(await f.text()); state.srt=cues.length?cues:null; state.srtName=f.name; $("#srt-name").textContent=cues.length?`${cues.length} sous-titres lus`:"Aucun sous-titre reconnu dans ce fichier"; render(); };
+
+/* ---------- rapport ---------- */
+function reportText(){
+  const R=state.lastR||evaluate(); const L=[];
+  L.push("Contrôle accessibilité · "+(state.platform==="instagram"?"Instagram":"Facebook")+" · "+new Date().toLocaleDateString("fr-FR"));
+  L.push(state.kind==="video"?`Vidéo ${state.media[0].w}×${state.media[0].h}, ${fr(state.media[0].dur)} s`:state.kind==="image"?`${state.media.length} image(s)`:"Aucune création");
+  for(const sec of POINTS){ L.push("",sec.sec.toUpperCase()); for(const [id,t,g] of sec.items){ const r=R[id]; L.push(`${id} ${t}${g?" [prioritaire]":""} : ${LABEL[r.s].toUpperCase()}`); if(r.d) L.push("   "+r.d.replace(/\n/g,"\n   ")); } }
+  return L.join("\n");
+}
+$("#btn-copy").onclick=async()=>{ const t=reportText(); try{ await navigator.clipboard.writeText(t); setStatus("Rapport copié."); }catch{ const ta=document.createElement("textarea"); ta.value=t; document.body.append(ta); ta.select(); setStatus("Copie bloquée : le rapport est sélectionné, fais Cmd+C."); setTimeout(()=>ta.remove(),15000); } };
+$("#btn-dl").hidden=false;
+$("#btn-dl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([reportText()],{type:"text/plain;charset=utf-8"})); a.download="controle-accessibilite-"+new Date().toISOString().slice(0,10)+".txt"; document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); setStatus("Rapport téléchargé."); };
+
+/* ---------- exemple au chargement ---------- */
+const ex=exampleImage(); state.media=[ex]; state.kind="image"; state.alts=[""];
+state.caption="🔥🔥🔥 NOUVEAU VISUEL !!! Le jackpot n'a jamais été aussi haut, ne ratez pas cette occasion unique de tenter votre chance cette semaine dans tous nos points de vente partout, cliquez ici pour jouer #lotonoel #jackpot";
+$("#caption").value=state.caption;
+state.elements=ex.boxes.map(b=>{ const m=measureBox(ex,b.box); return {...b,img:0,m,big:(b.type==="titre"||b.type==="chiffre")&&m&&m.hPx>=60}; }); state.elementsSource="exemple";
+renderThumbs(); render();
+})();
+</script>
+</body>
+</html>
