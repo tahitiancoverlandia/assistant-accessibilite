@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Assistant accessibilité réseaux sociaux</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
 <meta name="description" content="Vérifie une publication Instagram ou Facebook avant de la poster : ce qu'il faut corriger, ce qu'il faut vérifier. Tout se passe dans le navigateur.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -155,6 +156,18 @@ details.okl summary .more{font-weight:500;color:var(--accent);font-size:13px;mar
 .na{color:var(--faint);font-size:13px;margin-top:14px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
 .foot{color:var(--faint);font-size:12.5px;margin:12px 0 0}
+.aigrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px;margin-top:10px}
+@media (max-width:520px){.aigrid{grid-template-columns:minmax(0,1fr)}}
+.aigrid label,.adv label{display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--muted)}
+select,input[type=password],input[type=text]{font:inherit;font-size:14px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:9px 10px;width:100%}
+select:focus,input[type=password]:focus,input[type=text]:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.keyhelp{font-size:12.5px!important;color:var(--faint)!important}
+.keyhelp a{color:var(--accent);font-weight:600}
+details.tool>summary::-webkit-details-marker{display:none}
+details.tool[open]>summary .opt:last-child{display:none}
+.adv{margin-top:8px;font-size:13px}
+.adv summary{cursor:pointer;color:var(--muted)}
+.adv label{margin-top:8px}
 @media (max-width:520px){.card{padding:18px}.step{grid-template-columns:26px minmax(0,1fr)}.num{width:26px;height:26px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -205,6 +218,23 @@ details.okl summary .more{font-weight:500;color:var(--accent);font-size:13px;mar
               <p id="pip-help">Vérifie qu'un texte se lit bien sur son fond&nbsp;: clique sur « Commencer », puis sur une lettre, puis sur le fond juste à côté.</p>
               <div class="pick" id="pip-res" hidden><span class="sw"><i id="sw-fg"></i>Texte</span><span class="sw"><i id="sw-bg"></i>Fond</span><span class="verdict" id="pip-out"></span></div>
             </div>
+            <div class="tool" id="ocr-box" hidden>
+              <div class="tool-h"><strong>Lecture automatique des textes</strong><button class="btn ghost small" id="btn-ocr" type="button">Relire</button></div>
+              <p id="ocr-msg">Lecture des textes du visuel…</p>
+            </div>
+            <details class="tool" id="ext-box">
+              <summary class="tool-h" style="cursor:pointer;list-style:none"><strong>Analyse complète par une IA <span class="opt">(optionnel)</span></strong><span class="opt">ouvrir</span></summary>
+              <p>Ajoute la description proposée, le contrôle du -18, de la mise en garde et des couleurs. Il faut une clé (un code personnel) du service choisi : elle reste enregistrée dans ce navigateur uniquement.</p>
+              <div class="aigrid">
+                <label>Service<select id="ai-prov"><option value="gemini">Gemini (Google), gratuit</option><option value="openai">ChatGPT (OpenAI)</option><option value="claude">Claude (Anthropic)</option></select></label>
+                <label>Clé<input type="password" id="ai-key" autocomplete="off" spellcheck="false" placeholder="Colle ta clé ici"></label>
+              </div>
+              <p class="keyhelp"><span id="ai-keyhelp"></span> <a id="ai-keylink" href="#" target="_blank" rel="noopener noreferrer"></a></p>
+              <details class="adv"><summary>Réglages avancés</summary><label>Modèle<input type="text" id="ai-model" spellcheck="false"></label><button class="linkbtn" type="button" id="ai-forget">Effacer ma clé de ce navigateur</button></details>
+              <div class="actions" style="margin-top:12px"><button class="btn primary small" id="ai-run" type="button">Analyser avec l'IA</button><button class="btn ghost small" id="ai-stop" type="button" hidden>Arrêter</button></div>
+              <p class="status" id="ai-msg"></p>
+              <p class="keyhelp">Les images envoyées partent chez le service choisi. Avec une clé gratuite, il peut s'en servir pour améliorer ses produits : évite-le pour des visuels confidentiels pas encore sortis.</p>
+            </details>
           </div>
           <p class="status" id="status" role="status"></p>
         </div>
@@ -435,7 +465,7 @@ function evaluate(){
   if(!cap.trim()) set("1.3","fix","La légende est vide : gain, dates, conditions et mention jeu responsable doivent y être écrits en clair.");
   else {
     const miss=(ai?.infos_absentes_legende||[]).map(String).filter(Boolean);
-    const issues=[]; if(miss.length) issues.push("Infos du visuel absentes de la légende : "+miss.join(" · ")); if(!cc.jr) issues.push("Pas de mention jeu responsable dans la légende (ex. « Jouer comporte des risques »).");
+    const issues=[]; if(miss.length) issues.push((state.aiSource==="ocr"?"Infos lues sur le visuel mais absentes de la légende : ":"Infos du visuel absentes de la légende : ")+miss.join(" · ")); if(!cc.jr) issues.push("Pas de mention jeu responsable dans la légende (ex. « Jouer comporte des risques »).");
     if(issues.length) set("1.3","fix",issues.join("\n"));
     else if(!ai && n) set("1.3","check","Mention jeu responsable présente. Vérifie que les chiffres et dates du visuel sont aussi dans la légende.");
     else set("1.3","ok","Les infos clés du visuel et la mention jeu responsable sont dans la légende.");
@@ -518,6 +548,7 @@ function evaluate(){
   else set("3.5","na","Aucun lien.");
   // P1 P2
   if(!n) { set("P1","na","Ajoute une création."); set("P2","na","Ajoute une création."); }
+  else if(ai && state.aiSource==="ocr"){ set("P1",ai.moins18?"ok":"check",ai.moins18?"Mention -18 lue sur le visuel.":"La lecture automatique n'a pas trouvé de -18 : vérifie à l'œil que le pictogramme est bien là."); set("P2",ai.mise_en_garde?"ok":"check",ai.mise_en_garde?"Message de mise en garde lu sur le visuel.":"La lecture automatique n'a pas trouvé le message de mise en garde : vérifie à l'œil."); }
   else if(ai){ set("P1",ai.moins18?"ok":"fix",ai.moins18?"Pictogramme -18 repéré.":"Pas de pictogramme -18 repéré sur le visuel."); set("P2",ai.mise_en_garde?"ok":"fix",ai.mise_en_garde?"Message de mise en garde repéré.":"Pas de message de mise en garde repéré."); }
   else { set("P1","check","À l'œil : le pictogramme -18 est-il visible ?"); set("P2","check","À l'œil : le message de mise en garde est-il visible et lisible ?"); }
   return R;
@@ -636,7 +667,7 @@ function render(){
 }
 
 /* ---------- fichiers ---------- */
-function resetChecks(){ state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.pickMode=0; state.checked=new Set(); state.sel=0; state.srt=null; state.srtName=""; $("#srt-name").textContent=""; $("#srt").value=""; }
+function resetChecks(){ state.aiSource=null; if(window.__onReset) window.__onReset(); state.ai=null; state.elements=null; state.elementsSource=null; state.flash=null; state.pick=[]; state.pickMode=0; state.checked=new Set(); state.sel=0; state.srt=null; state.srtName=""; $("#srt-name").textContent=""; $("#srt").value=""; }
 async function handleFiles(files){
   const list=[...files]; if(!list.length) return;
   const vids=list.filter(f=>f.type.startsWith("video/")), imgs=list.filter(f=>f.type.startsWith("image/"));
@@ -648,6 +679,7 @@ async function handleFiles(files){
     if(vids.length){ const m=await loadVideo(vids[0]); state.media=[m]; state.kind="video"; state.videoInfo={dur:m.dur}; state.alts=[]; }
     else { state.media=await Promise.all(imgs.slice(0,10).map(loadImage)); state.kind="image"; state.alts=state.media.map(()=> ""); }
     renderMedia(); renderPick(); render(); setStatus(imgs.length>10?"Seules les 10 premières images sont gardées (limite d'un carrousel).":"");
+    if(state.kind==="image" && window.__afterLoad) window.__afterLoad();
     if(state.kind==="video") analyseFlashes(state.media[0]).catch(()=>{ state.flashBusy=false; setStatus("Impossible d'analyser les clignotements de cette vidéo."); render(); });
   }catch(err){ setStatus("Impossible de lire ce fichier. Essaie un autre format."); }
 }
@@ -685,6 +717,167 @@ function reportText(){
   return L.join("\n");
 }
 $("#btn-copy").onclick=async()=>{ const t=reportText(); try{ await navigator.clipboard.writeText(t); setStatus("Rapport copié."); }catch{ setStatus("Copie impossible ici : utilise « Télécharger le rapport »."); } };
+
+/* ---------- lecture automatique des textes (OCR, gratuit, dans le navigateur) ---------- */
+let ocrWorker=null, ocrRun=0;
+const MONTHS="janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre";
+const digits=(s)=>s.replace(/[^\d]/g,"");
+function keyInfos(text){
+  const out=new Set();
+  const amt=/\d{1,3}(?:[ .  ]\d{3})+(?:,\d+)?\s?(?:F|XPF|€)?|\d+(?:,\d+)?\s?(?:mds?|milliards?|millions?|M)\b|\d{2,}\s?(?:F|XPF|€)\b/gi;
+  const dat=new RegExp(`\\d{1,2}(?:er)?\\s(?:au\\s\\d{1,2}\\s)?(?:${MONTHS})(?:\\s\\d{4})?`,"gi");
+  for(const re of [amt,dat]) for(const m of text.match(re)||[]) out.add(m.trim());
+  return [...out];
+}
+function inCaption(info,cap){
+  const d=digits(info); const c=digits(cap);
+  if(d.length>=2 && c.includes(d)) return true;
+  const low=cap.toLowerCase(); return low.includes(info.toLowerCase());
+}
+function classify(t,hPx){
+  if(/risque|dangereux|addiction|joueurs.?info|jouer comporte|interdit aux mineurs|endettement|modération|moderation/i.test(t)) return "mention_legale";
+  if(/\d/.test(t) && hPx>=60) return "chiffre";
+  if(hPx>=70) return "titre";
+  return "autre";
+}
+async function getOcr(){
+  if(ocrWorker) return ocrWorker;
+  if(!window.Tesseract) throw new Error("module de lecture non chargé");
+  ocrWorker = await Tesseract.createWorker("fra",1,{logger:(m)=>{ if(m.status==="recognizing text") $("#ocr-msg").textContent=`Lecture des textes du visuel… ${Math.round((m.progress||0)*100)} %`; else if(/loading|initializ/.test(m.status||"")) $("#ocr-msg").textContent="Préparation de la lecture automatique (la première fois, quelques secondes)…"; }});
+  return ocrWorker;
+}
+async function runOcr(){
+  if(state.kind!=="image"||state.example) return;
+  const run=++ocrRun; const box=$("#ocr-box"); box.hidden=false; $("#btn-ocr").disabled=true;
+  try{
+    const w=await getOcr(); const els=[]; let full="";
+    for(let i=0;i<state.media.length;i++){
+      const m=state.media[i];
+      $("#ocr-msg").textContent=`Lecture des textes${state.media.length>1?` de l'image ${i+1}/${state.media.length}`:""}…`;
+      const {data}=await w.recognize(m.canvas);
+      if(run!==ocrRun) return;
+      full+="\n"+(data.text||"");
+      for(const ln of (data.lines||[])){
+        const t=(ln.text||"").replace(/\s+/g," ").trim(); if(t.replace(/[^\p{L}\p{N}]/gu,"").length<2 || (ln.confidence||0)<55) continue;
+        const b=ln.bbox; const box=[b.x0/m.aw*100,b.y0/m.ah*100,(b.x1-b.x0)/m.aw*100,(b.y1-b.y0)/m.ah*100];
+        const meas=measureBox(m,box); if(!meas) continue;
+        const type=classify(t,meas.hPx);
+        els.push({texte:t.slice(0,80),type,img:i,box,m:meas,big:(type==="titre"||type==="chiffre")&&meas.hPx>=60});
+      }
+    }
+    const infos=keyInfos(full);
+    state.ai={ moins18:/(^|[^\d])[-–]\s?18(?!\d)|\b18\s?ans\b|moins de 18/i.test(full), mise_en_garde:/risque|dangereux|addiction|joueurs.?info|jouer comporte/i.test(full),
+      infos_cles:infos, infos_absentes_legende: state.caption.trim()?infos.filter(x=>!inCaption(x,state.caption)):[] };
+    state.aiSource="ocr"; state.ocrText=full;
+    state.elements=els; state.elementsSource="lecture automatique";
+    $("#ocr-msg").textContent = els.length ? `${els.length} ligne${els.length>1?"s":""} de texte lue${els.length>1?"s":""} : contraste et taille mesurés automatiquement.` : "Aucun texte lisible trouvé automatiquement. Utilise « Mesurer un contraste » pour les textes importants.";
+    render();
+  }catch(e){
+    $("#ocr-msg").textContent="La lecture automatique n'a pas pu se lancer (connexion ?). Les autres contrôles marchent.";
+  }finally{ $("#btn-ocr").disabled=false; }
+}
+$("#btn-ocr").onclick=runOcr;
+// la légende change : on recompare les infos lues avec la légende
+const _capHandler=$("#caption").oninput;
+$("#caption").oninput=(e)=>{ if(state.aiSource==="ocr"&&state.ai){ state.ai.infos_absentes_legende=e.target.value.trim()?(state.ai.infos_cles||[]).filter(x=>!inCaption(x,e.target.value)):[]; } _capHandler(e); };
+
+/* ---------- analyse IA complète (optionnelle, avec la clé de chacun) ---------- */
+const PROV={
+  gemini:{name:"Gemini (Google)",model:"gemini-2.5-flash",keyUrl:"https://aistudio.google.com/apikey",keyHelp:"Gratuit dans la limite d'un quota. Va sur aistudio.google.com/apikey, connecte-toi avec un compte Google, clique sur « Create API key » et copie la clé."},
+  openai:{name:"ChatGPT (OpenAI)",model:"gpt-4.1-mini",keyUrl:"https://platform.openai.com/api-keys",keyHelp:"Payant (quelques centimes par analyse). Va sur platform.openai.com/api-keys, crée une clé et copie-la."},
+  claude:{name:"Claude (Anthropic)",model:"claude-sonnet-5-5",keyUrl:"https://console.anthropic.com/settings/keys",keyHelp:"Payant (quelques centimes par analyse). Va sur console.anthropic.com, rubrique API Keys, crée une clé et copie-la."}
+};
+const LS=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch{ return null; } };
+function syncProv(){
+  const p=PROV[$("#ai-prov").value]; $("#ai-model").value=LS("aa-model-"+$("#ai-prov").value)||p.model;
+  $("#ai-key").value=LS("aa-key-"+$("#ai-prov").value)||""; $("#ai-keyhelp").textContent=p.keyHelp;
+  const a=$("#ai-keylink"); a.href=p.keyUrl; a.textContent="Créer une clé "+p.name.split(" ")[0];
+}
+$("#ai-prov").value=LS("aa-prov")||"gemini"; syncProv();
+$("#ai-prov").onchange=()=>{ LS("aa-prov",$("#ai-prov").value); syncProv(); };
+$("#ai-key").onchange=()=>{ const v=$("#ai-key").value.trim(); LS("aa-key-"+$("#ai-prov").value, v||null); };
+$("#ai-model").onchange=()=>{ LS("aa-model-"+$("#ai-prov").value,$("#ai-model").value.trim()||null); };
+$("#ai-forget").onclick=()=>{ LS("aa-key-"+$("#ai-prov").value,null); $("#ai-key").value=""; $("#ai-msg").textContent="Clé effacée de ce navigateur."; };
+
+function buildPrompt(nImg,vid){
+  return `Tu contrôles l'accessibilité d'une publication ${state.platform==="instagram"?"Instagram":"Facebook"} (jeux d'argent).
+${vid?`Les ${nImg} images jointes sont des captures d'une même vidéo, prises à 15 %, 50 % et 88 % de sa durée.`:`Les ${nImg} images jointes sont ${nImg>1?"les slides d'un carrousel, dans l'ordre":"le visuel du post"}.`}
+
+Légende du post :
+"""${state.caption.slice(0,4000)}"""
+${!vid?`Textes alternatifs saisis (un par image) :\n${state.media.slice(0,nImg).map((_,i)=>`Image ${i+1} : """${(state.alts[i]||"").slice(0,600)}"""`).join("\n")}`:""}
+
+Réponds uniquement avec un objet JSON de cette forme, en français :
+{"elements_texte":[{"image":0,"texte":"JACKPOT","type":"titre|chiffre|mention_legale|logo|autre","box":[x,y,largeur,hauteur]}],
+ "infos_cles":["2,8 milliards"],"infos_absentes_legende":[],"alt_proposes":["…"],"alt_evaluation":[{"ok":true,"remarque":""}],
+ "images_decoratives":[false],"couleur_seule":{"probleme":false,"remarque":""},"moins18":true,"mise_en_garde":true,
+ "legende":{"info_principale_en_premier":true,"remarque":""},"hashtags":[{"actuel":"#lotonoel","propose":"#LotoNoel"}],
+ "video":{"description_dans_legende":true,"sous_titres_incrustes":false,"remarque":""}}
+Règles :
+- elements_texte : chaque ligne de texte lisible, une entrée par LIGNE ; "image" = index (0 = première) ; "box" = rectangle serré autour de la ligne, en pourcentage de la largeur et de la hauteur de l'image (0 à 100). Max 25 lignes.
+- infos_cles : gains, montants, dates, conditions écrits sur le visuel ; infos_absentes_legende : celles absentes de la légende.
+- alt_proposes : un texte alternatif par image (1 à 2 phrases : message, chiffres et dates clés, sans "image de").${vid?" [] pour une vidéo.":""}
+- alt_evaluation : pour chaque texte alternatif saisi, ok=false s'il manque une info clé, avec une remarque courte.${vid?" [] pour une vidéo.":""}
+- couleur_seule.probleme : true si une information n'est donnée que par une couleur.
+- moins18 : pictogramme ou mention -18 visible ; mise_en_garde : message de prévention visible sur le visuel.
+- hashtags : seulement ceux de plusieurs mots sans majuscule à chaque mot, avec la bonne écriture ; [] sinon.
+- legende.info_principale_en_premier : l'information principale est-elle dans la première phrase ?
+- video : ${vid?"description_dans_legende = la légende décrit-elle la vidéo ; sous_titres_incrustes = des sous-titres de paroles sont-ils visibles.":"null."}
+- Remarques courtes, une phrase, tutoiement.`;
+}
+const b64=(blob)=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=rej; r.readAsDataURL(blob); });
+async function shrink(canvas,max=1400){ const s=Math.min(1,max/Math.max(canvas.width,canvas.height)); const c=document.createElement("canvas"); c.width=Math.round(canvas.width*s); c.height=Math.round(canvas.height*s); c.getContext("2d").drawImage(canvas,0,0,c.width,c.height); return new Promise(r=>c.toBlob(r,"image/jpeg",0.88)); }
+function parseJson(t){ try{ return JSON.parse(t); }catch{} const m=t.match(/```(?:json)?\s*([\s\S]*?)```/); if(m){ try{ return JSON.parse(m[1]); }catch{} } const a=t.indexOf("{"), b=t.lastIndexOf("}"); if(a>=0&&b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch{} } return null; }
+async function callProvider(prov,key,model,prompt,imgs,signal){
+  if(prov==="gemini"){
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:"POST",signal,headers:{"Content-Type":"application/json","x-goog-api-key":key},
+      body:JSON.stringify({contents:[{parts:[{text:prompt},...imgs.map(d=>({inline_data:{mime_type:"image/jpeg",data:d}}))]}],generationConfig:{responseMimeType:"application/json"}})});
+    const j=await r.json().catch(()=>null); if(!r.ok) throw new Error(j?.error?.message||("HTTP "+r.status));
+    return (j?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+  }
+  if(prov==="openai"){
+    const r=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",signal,headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+      body:JSON.stringify({model,response_format:{type:"json_object"},messages:[{role:"user",content:[{type:"text",text:prompt},...imgs.map(d=>({type:"image_url",image_url:{url:"data:image/jpeg;base64,"+d}}))]}]})});
+    const j=await r.json().catch(()=>null); if(!r.ok) throw new Error(j?.error?.message||("HTTP "+r.status));
+    return j?.choices?.[0]?.message?.content||"";
+  }
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model,max_tokens:4000,messages:[{role:"user",content:[...imgs.map(d=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:d}})),{type:"text",text:prompt}]}]})});
+  const j=await r.json().catch(()=>null); if(!r.ok) throw new Error(j?.error?.message||("HTTP "+r.status));
+  return (j?.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");
+}
+let extCtl=null;
+$("#ai-run").onclick=async()=>{
+  const prov=$("#ai-prov").value, key=$("#ai-key").value.trim(), model=$("#ai-model").value.trim()||PROV[prov].model;
+  if(!state.media.length){ $("#ai-msg").textContent="Ajoute d'abord ton visuel (étape 1)."; return; }
+  if(!key){ $("#ai-msg").textContent="Colle d'abord ta clé dans le champ « Clé »."; $("#ai-key").focus(); return; }
+  LS("aa-key-"+prov,key);
+  extCtl=new AbortController(); $("#ai-run").disabled=true; $("#ai-stop").hidden=false; $("#ai-msg").textContent=`${PROV[prov].name} analyse le visuel… (souvent 10 à 40 secondes)`;
+  try{
+    const vid=state.kind==="video"; let tgt, blobs;
+    if(vid){ const m=state.media[0]; tgt=[]; for(const p of [0.15,0.5,0.88]) tgt.push(await grabFrame(m,m.dur*p)); }
+    else tgt=state.media.slice(0,6);
+    blobs=await Promise.all(tgt.map(t=>shrink(t.canvas)));
+    const imgs=await Promise.all(blobs.map(b64));
+    const text=await callProvider(prov,key,model,buildPrompt(tgt.length,vid),imgs,extCtl.signal);
+    const ai=parseJson(text); if(!ai||typeof ai!=="object") throw new Error("réponse illisible, relance l'analyse");
+    state.ai=ai; state.aiSource="ia";
+    const els=(Array.isArray(ai.elements_texte)?ai.elements_texte:[]).slice(0,25).map(e=>{
+      const img=Math.min(Math.max(0,Number(e.image)||0),tgt.length-1); const box=(Array.isArray(e.box)?e.box:[]).map(Number);
+      if(box.length!==4||box.some(v=>!isFinite(v))) return null;
+      const m=measureBox(tgt[img],box); const type=String(e.type||"autre");
+      return {texte:String(e.texte||"").slice(0,80),type,img,box,m,big:(type==="titre"||type==="chiffre")&&m&&m.hPx>=60};
+    }).filter(Boolean);
+    if(els.length){ state.elements=els; state.elementsSource="IA"; }
+    $("#ai-msg").textContent=`Analyse terminée avec ${PROV[prov].name}.`; render();
+  }catch(e){
+    if(e?.name==="AbortError") $("#ai-msg").textContent="Analyse arrêtée.";
+    else { const m=String(e?.message||e); $("#ai-msg").textContent = /key|api.?key|401|403|permission|unauth|invalid x-api/i.test(m) ? "La clé est refusée : vérifie que tu l'as copiée en entier, ou crée-en une nouvelle." : /quota|rate|429|limit/i.test(m) ? "Limite d'utilisation atteinte : réessaie plus tard." : /model|not found|404/i.test(m) ? "Ce modèle n'est pas disponible : remets le modèle proposé par défaut." : /Failed to fetch|NetworkError/i.test(m) ? "Impossible de joindre le service : vérifie ta connexion." : "L'analyse a échoué : "+m.slice(0,140); }
+  }finally{ $("#ai-run").disabled=false; $("#ai-stop").hidden=true; extCtl=null; }
+};
+$("#ai-stop").onclick=()=>extCtl?.abort();
+
+window.__afterLoad=runOcr; window.__onReset=()=>{ ocrRun++; const o=document.getElementById('ocr-box'); if(o) o.hidden=true; };
 
 $("#btn-dl").hidden=false;
 $("#btn-dl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([reportText()],{type:"text/plain;charset=utf-8"})); a.download="controle-accessibilite-"+new Date().toISOString().slice(0,10)+".txt"; document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); };
