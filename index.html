@@ -14,7 +14,7 @@
 /* Mise en page : à gauche « Ta publication » en 3 étapes guidées, à droite « Résultat » trié par action (à corriger, à vérifier, c'est bon). */
 :root{
   --bg:#F6F7F9; --surface:#FFFFFF; --soft:#F1F3F6; --line:#E5E8EE; --ink:#0F1728; --muted:#545E70; --faint:#7E8798;
-  --accent:#2952E3; --accent-ink:#FFFFFF; --accent-soft:#EAF0FF;
+  --accent:#2952E3; --accent-ink:#FFFFFF; --accent-soft:#EAF0FF; --sun:#FFC400; --sun-soft:#FFFBEA;
   --fix:#C8281E; --fix-soft:#FDECEB; --check:#9A5300; --check-soft:#FFF4E2; --ok:#0A7A4B; --ok-soft:#E7F6EE;
   --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.06);
   --f-head:"Plus Jakarta Sans","Inter",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
@@ -22,12 +22,12 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A9B3C6; --faint:#7F8AA2;
-  --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547;
+  --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547; --sun:#FFC400; --sun-soft:#2A2410;
   --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B0F17; --surface:#121826; --soft:#192133; --line:#243049; --ink:#EEF2F8; --muted:#A9B3C6; --faint:#7F8AA2;
-  --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547;
+  --accent:#7C9BFF; --accent-ink:#0B1020; --accent-soft:#1B2547; --sun:#FFC400; --sun-soft:#2A2410;
   --fix:#FF8A80; --fix-soft:#3A1715; --check:#FFC266; --check-soft:#36260E; --ok:#5FD49B; --ok-soft:#102E20;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}
 *{box-sizing:border-box}
@@ -59,6 +59,8 @@ h2{font-family:var(--f-head);font-size:19px;letter-spacing:-.01em;margin:0 0 4px
 /* étapes */
 .step{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:16px 0;border-top:1px solid var(--line)}
 .step:first-of-type{border-top:0;padding-top:4px}
+#st1{border:2px solid var(--sun);border-radius:14px;padding:14px 14px 16px;background:var(--sun-soft);margin-bottom:10px}
+#st1+.step{border-top:0}
 .num{width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--muted);font-weight:700;font-size:13.5px;display:grid;place-items:center}
 .step.done .num{background:var(--ok);color:#fff}
 .step.done .num span{display:none}
